@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Light theme keyboard colors -->
+    <color name="keyboard_background_light">#ECEFF1</color>
+    <color name="key_background_light">#FFFFFF</color>
+    <color name="key_text_light">#212121</color>
+    <color name="key_pressed_light">#BDBDBD</color>
+    <color name="special_key_background_light">#B0BEC5</color>
+    <color name="toolbar_background_light">#E0E0E0</color>
+
+    <!-- Dark theme keyboard colors -->
+    <color name="keyboard_background_dark">#1B1B1F</color>
+    <color name="key_background_dark">#2C2C30</color>
+    <color name="key_text_dark">#E0E0E0</color>
+    <color name="key_pressed_dark">#404044</color>
+    <color name="special_key_background_dark">#3C3C40</color>
+    <color name="toolbar_background_dark">#252528</color>
+
+    <!-- Accent -->
+    <color name="accent">#4A90D9</color>
+    <color name="accent_light">#7BB3E8</color>
+</resources>

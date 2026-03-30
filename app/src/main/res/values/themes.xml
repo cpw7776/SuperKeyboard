@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.SuperKeyboard" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">#ECEFF1</item>
+        <item name="android:navigationBarColor">#ECEFF1</item>
+    </style>
+</resources>

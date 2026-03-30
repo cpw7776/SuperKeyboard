@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">SuperKeyboard</string>
+    <string name="settings_title">SuperKeyboard Settings</string>
+    <string name="subtype_en_us">English (US)</string>
+
+    <!-- Settings -->
+    <string name="settings_appearance">Appearance</string>
+    <string name="settings_clipboard">Clipboard</string>
+    <string name="settings_about">About</string>
+    <string name="settings_theme">Theme</string>
+    <string name="settings_theme_system">System</string>
+    <string name="settings_theme_light">Light</string>
+    <string name="settings_theme_dark">Dark</string>
+    <string name="settings_keyboard_height">Keyboard Height</string>
+    <string name="settings_haptic_feedback">Haptic Feedback</string>
+    <string name="settings_sound_on_keypress">Sound on Keypress</string>
+    <string name="settings_clipboard_history_duration">History Duration</string>
+    <string name="settings_clipboard_clear_all">Clear All Clipboard History</string>
+    <string name="settings_clipboard_enabled">Enable Clipboard History</string>
+
+    <!-- Toolbar -->
+    <string name="toolbar_translate">Translate</string>
+    <string name="toolbar_tts">Read Aloud</string>
+    <string name="toolbar_stt">Dictation</string>
+    <string name="toolbar_clipboard">Clipboard</string>
+    <string name="toolbar_rewrite">Rewrite</string>
+    <string name="toolbar_summarize">Summarize</string>
+    <string name="toolbar_expand">Expand</string>
+    <string name="toolbar_presets">Presets</string>
+
+    <!-- About -->
+    <string name="about_version">Version %1$s</string>
+    <string name="about_privacy">SuperKeyboard is completely private. No data leaves your device unless you explicitly configure your own AI endpoints.</string>
+    <string name="about_description">A privacy-first AI keyboard. All processing happens on-device or via your own private infrastructure.</string>
+
+    <!-- Clipboard -->
+    <string name="clipboard_empty">No clipboard history</string>
+    <string name="clipboard_search_hint">Search clipboard…</string>
+    <string name="clipboard_pinned">Pinned</string>
+    <string name="clipboard_copied">Copied to clipboard</string>
+</resources>
