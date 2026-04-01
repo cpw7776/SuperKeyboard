@@ -11,6 +11,7 @@ class SuperKeyboardApp : Application() {
     override fun onCreate() {
         super.onCreate()
         instance = this
+        System.loadLibrary("sqlcipher")
         clipboardDatabase = ClipboardDatabase.create(this)
     }
 
