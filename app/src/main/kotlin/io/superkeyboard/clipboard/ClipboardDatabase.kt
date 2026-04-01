@@ -6,8 +6,7 @@ import android.security.keystore.KeyProperties
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import net.sqlcipher.database.SQLiteDatabase
-import net.sqlcipher.database.SupportFactory
+import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
 import java.security.KeyStore
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
@@ -36,7 +35,7 @@ abstract class ClipboardDatabase : RoomDatabase() {
 
         private fun buildDatabase(context: Context): ClipboardDatabase {
             val passphrase = getOrCreatePassphrase(context)
-            val factory = SupportFactory(passphrase)
+            val factory = SupportOpenHelperFactory(passphrase)
 
             return Room.databaseBuilder(
                 context.applicationContext,

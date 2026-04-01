@@ -114,7 +114,8 @@ class EmojiPickerView @JvmOverloads constructor(
                     size
                 )
                 setOnClickListener {
-                    val emoji = emojis.getOrNull(adapterPosition) ?: return@setOnClickListener
+                    val pos = (it.parent as? RecyclerView)?.getChildAdapterPosition(it) ?: return@setOnClickListener
+                    val emoji = emojis.getOrNull(pos) ?: return@setOnClickListener
                     onEmojiSelected?.invoke(emoji)
                 }
             }
