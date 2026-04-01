@@ -6,9 +6,9 @@ import android.security.keystore.KeyProperties
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import net.sqlcipher.database.SQLiteDatabase
 import net.sqlcipher.database.SupportFactory
 import java.security.KeyStore
-import java.security.MessageDigest
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
@@ -23,6 +23,7 @@ abstract class ClipboardDatabase : RoomDatabase() {
         private const val DB_NAME = "clipboard.db"
         private const val KEYSTORE_ALIAS = "superkeyboard_clipboard_key"
         private const val ANDROID_KEYSTORE = "AndroidKeyStore"
+        private const val PASSPHRASE_FILE = "clipboard_passphrase"
 
         @Volatile
         private var instance: ClipboardDatabase? = null
@@ -34,7 +35,7 @@ abstract class ClipboardDatabase : RoomDatabase() {
         }
 
         private fun buildDatabase(context: Context): ClipboardDatabase {
-            val passphrase = getOrCreatePassphrase()
+            val passphrase = getOrCreatePassphrase(context)
             val factory = SupportFactory(passphrase)
 
             return Room.databaseBuilder(
@@ -47,9 +48,7 @@ abstract class ClipboardDatabase : RoomDatabase() {
                 .build()
         }
 
-        private const val PASSPHRASE_FILE = "clipboard_passphrase"
-
-        private fun getOrCreatePassphrase(): ByteArray {
+        private fun getOrCreatePassphrase(context: Context): ByteArray {
             val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE).apply { load(null) }
 
             if (!keyStore.containsAlias(KEYSTORE_ALIAS)) {
@@ -70,11 +69,6 @@ abstract class ClipboardDatabase : RoomDatabase() {
                 keyGenerator.generateKey()
             }
 
-            // Android Keystore doesn't allow extracting key bytes directly.
-            // Instead, we use the Keystore key to encrypt a stable passphrase
-            // that we store in app-private storage.
-            val context = instance?.applicationContext
-                ?: throw IllegalStateException("Database not initialized")
             val file = java.io.File(context.filesDir, PASSPHRASE_FILE)
 
             return if (file.exists()) {
@@ -100,7 +94,6 @@ abstract class ClipboardDatabase : RoomDatabase() {
             cipher.init(Cipher.ENCRYPT_MODE, key)
             val iv = cipher.iv
             val encrypted = cipher.doFinal(passphrase)
-            // Store IV length + IV + encrypted data
             return byteArrayOf(iv.size.toByte()) + iv + encrypted
         }
 

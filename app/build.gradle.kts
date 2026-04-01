@@ -57,6 +57,9 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     debugImplementation(libs.androidx.compose.ui.tooling)
 
+    // RecyclerView
+    implementation(libs.androidx.recyclerview)
+
     // Room + SQLCipher
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
