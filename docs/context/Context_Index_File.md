@@ -91,6 +91,8 @@ Also update:
 | `gradle/libs.versions.toml` | Version catalog (all dependency versions) |
 | `gradle.properties` / `local.properties` | Gradle flags / SDK path (git-ignored) |
 | `gradlew`, `gradlew.bat`, `gradle/wrapper/` | Gradle wrapper (pins Gradle 8.11.1) |
+| `keystore/superkeyboard-debug.keystore` | Committed persistent **debug** keystore — signs `assembleDebug` for sideload. Not for release. |
+| `apk-releases/BUILD.md` | Per-build instructions + canonical debug signature SHA-256; built APKs land here (git-ignored) |
 
 ### App — `app/src/main/kotlin/io/superkeyboard/`
 | File | Purpose |
