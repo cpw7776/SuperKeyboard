@@ -34,9 +34,11 @@ Gate count: five (project decision — five-gate model per CLAUDE.md "Post-Featu
 
 ## Files structurally rewritten
 
-> Format: `<file>` — one-line reason + scope of rewrite.
+> Format (machine-readable): one bullet per file, `` - `<file>` `` — one-line reason + scope of rewrite. The **leading backtick code-span is the parseable token**: keep the file path first and wrapped in backticks so an upgrade can extract the exact set without reading the prose.
 >
 > Use this when the kit's vanilla file is end-to-end inapplicable and the project owns the file outright. Upgrades will skip per-paragraph edits to these files and will not slot-wrap them.
+>
+> **Why this is load-bearing (like the `Gate count:` line above):** `upgrade-kit.md` Step 6 reads this set to decide whether a failed sanity check is a real `FAIL` or an `EXPECTED-FAIL (divergent)`. It greps this section for the backtick-wrapped paths — so a file omitted here will have its (legitimately-absent) kit anchor mis-reported as a real skipped edit, and a file path written without backticks won't be seen. List every wholesale rewrite, path-in-backticks-first. `feature-lifecycle.md` belongs here too if the project rewrote it wholesale — not only `testing-agent.md`.
 
 - _(none — files were customized via slots, not rewritten end-to-end.)_ The `testing-agent.md` agent-intro slot redirects the whole browser-testing model to Gradle unit/instrumented tests + manual on-device testing, but the file's structure and anchors are otherwise the kit vanilla, so upgrades can still slot-merge it. If a future change rewrites it wholesale, record it here.
 
