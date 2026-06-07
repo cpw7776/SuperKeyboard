@@ -60,6 +60,8 @@ If you're invoked AS one of these sub-agents, read the agent file end-to-end bef
 
 ## The five gates (Phase 5.8 — no merge without all five)
 
+> Stack-dependent: a project with **no standalone automated test suite** runs **four** (Retrospective + Code Quality + Context Docs + Documentation) — there is **no Test-Suite gate block**; the build/sideload proof + any suite lesson fold into the retro's Gap A (or a project-named build gate). See `feature-lifecycle.md` Phase 5.8 for the fold rule. "Five" is the default; "four" is the sanctioned reduction for suite-less stacks (set `Gate count: four (suite-less)` in `KIT_DEVIATIONS.md`).
+
 Before commit, the main transcript must contain, in order:
 
 1. **`RETROSPECTIVE GATE:`** — verbatim from Phase 5.1 (main agent). The unconditional retro sweep: `Findings swept: N` over every manual-test finding ∪ `fix(` commit, with Gap A (test suite) / Gap B (testing agent) / **Gap C (implementation/code lessons → `Implementation_Patterns.md`)** / planning / Tier-3 / deliberately-not-lessoned lines populated. A zero-finding epic still prints it with all lines `none`.

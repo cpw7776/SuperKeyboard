@@ -34,6 +34,43 @@ Skip directly to the relevant section (**Adapt Mode** for edits, **Create Mode**
 
 ---
 
+## Stack Adaptation — read this BEFORE generating (browser is the *default*, not the assumption)
+
+Everything below — Steps 2–5, the scenario template, the config block — is written in the kit's **default vocabulary: a web app driven through a browser** (agent-browser, a dev server, logins, routes, network/console assertions). That vocabulary is a **default, not a requirement.** Many projects are not browser apps; do **not** bend a native, desktop, data, CLI, or library project into browser shape. Classify the testing surface first, then *substitute* the primitives below as you go.
+
+**Record the surface** in the generated agent's header (`Stack: <surface>`):
+
+| Surface | How you drive it | "One step" is… | Observe → | Pass evidence | `dev_server` / `credentials_source` → | Parallel-isolation axis |
+|---|---|---|---|---|---|---|
+| **web** (default) | agent-browser + dev server | one browser action (click/fill/nav) | rendered DOM | 2xx network + DB/side-effect + no console errors | as written | distinct-login / isolated-backend |
+| **mobile-native** (Android/iOS) | `./gradlew test`/`assembleDebug` + `adb`/instrumented tests; `xcodebuild test` | one instrumented action / one assertion | UI-automator·XCTest assertion + logcat | build/sideload succeeds + instrumented assertions green + no crash in logcat | build command / signing or device — **not a URL** | isolated emulator/simulator instance or build dir |
+| **desktop** (Tauri/Electron) | native build + IPC/e2e harness (tauri-driver, WebDriver) | one IPC call / one UI action | window state / IPC response | build succeeds + IPC/e2e assertions green | build command / app config | isolated app-data dir |
+| **python-data-app / pipeline** (Streamlit, ETL, ML) | `pytest` + `streamlit run` smoke; `pip install -e .` | one pytest case / one pipeline stage | return value / dataframe / file artifact | pytest green + artifact matches expectation | run/serve command / env or fixture — **not a URL** | isolated temp DB + fixture dir (`pytest-xdist`) |
+| **cli / library** | the test runner (`go test`, `cargo test`, `pytest`, `npm test`) + the binary | one invocation / one assertion | stdout·stderr·exit code / return value | exit 0 + asserted output + no panic | invocation command / fixture — **not a URL** | separate build/temp dir per worker |
+
+**As you work Steps 2–5, substitute — don't delete the structure:**
+- **Step 2 dimensions:** keep User Flows / Async / Error-Edge. **Auth & Role/Tier Matrix**, **Routes & Pages**, and **Responsive** are *web defaults* — drop or replace them when the project has no auth / no URLs / no responsive layout (a single-user app, a library). Add stack-native dimensions instead (permissions & intents for Android, schema/migration for a data app, the public API surface for a library).
+- **Step 3 template:** "one browser action" → the surface's "one step"; **Render/Console/Network** criteria → the surface's Observe/Evidence columns. Keep **Pattern A's spirit** — never accept a render-only PASS; require the real side effect, expressed in the stack's terms (the row landed, the file was written, the exit code was 0, the APK installed and didn't crash).
+- **Step 4 execution order:** "minimize login cycles" is web-specific. For suite-style stacks, order by **fixture/setup cost** instead — cheap pure tests first, build-heavy/device tests last.
+- **Step 5 config:** `dev_server`, `credentials_source`, and `parallel_isolation: distinct-login` are browser defaults — replace with the surface's command / fixture / isolation axis. **Keep the self-pacing keys** (`default_action_timeout`, `run_hard_cap`, `progress_log`): they are stack-agnostic and exist precisely to catch silent stalls in long native builds and async waits.
+- **Base agent:** vanilla `.claude/agents/testing-agent.md` is browser-shaped. For a non-web surface the project's testing-agent must be the **stack-rewritten variant** — its RAM-hygiene pre-flight/teardown targets the stack's processes (`GradleWorkerMain`/`KotlinCompileDaemon`, `pytest`/`vitest` workers), not chromium. Record the divergence in `docs/KIT_DEVIATIONS.md`.
+
+**Concurrency & gates follow the surface, too.** If the surface has no safe concurrency story, set `parallel_safe: false` and keep Phase 4 sequential — parallel is always optional (`feature-lifecycle.md` Phase 4.1). If the project genuinely has **no automated suite at all**, Phase 4 is a build/sideload pipeline and the lifecycle runs **four** gates, not five (`feature-lifecycle.md` Phase 5.8).
+
+#### Worked example — native-mobile (Android) — *an illustration, not an enforced profile*
+
+Two separate Android projects independently re-derived the same set, so here it is pre-answered. **Adapt it; don't paste it blindly** — it's a worked example of applying the table above, not a profile the kit imposes (the kit stays "adapt, don't dictate"). For an Android/Kotlin/Gradle app:
+
+- **Base agent:** `.claude/agents/testing-agent.md` is **structurally rewritten** for the stack — drives `./gradlew test` / `assembleDebug` + `adb`/instrumented tests, RAM-hygiene targets `GradleWorkerMain`/`KotlinCompileDaemon` (not chromium). Record it under "Files structurally rewritten" in `KIT_DEVIATIONS.md`.
+- **This file's output:** scenarios in two types — **Type-A automated** (`./gradlew :app:test<Variant>UnitTest` JVM unit / instrumented assertions) and **Type-B on-device** (a sideload checklist a human runs after `adb install`). Observe via assertion results + `logcat`; pass-evidence = build/sideload succeeds + assertions green + no crash in logcat.
+- **Config:** `dev_server` → the build/run command (or omit); `credentials_source` → `none` for a single-user app (or the signing/fixture source); `parallel_safe: false` (single device/emulator — keep Phase 4 sequential).
+- **N/A slots:** auth / role-tier matrix, parallel-login capacity, responsive — all "intentionally empty" (record reasons in `KIT_DEVIATIONS.md`). Pattern B (DB preconditions) applies **only** if the app has a local DB (e.g. Room) — else N/A.
+- **Gate count — DO NOT assume four.** It depends on whether the project has a standalone automated suite: an app with a real JVM/instrumented unit suite (`./gradlew test`) runs **five** gates (Test-Suite gate = the Gradle suite); a pure sideload-only app with no suite runs **four** (set `Gate count: four (suite-less)` in `KIT_DEVIATIONS.md`). Two Android projects, two different answers — derive it, don't presume.
+
+(Desktop/Tauri, Python-data-app, and CLI/library follow the same method against their own rows — write their worked examples here as they recur.)
+
+---
+
 ## Step 0 (Create Mode): Registry Check — Find-or-Create
 
 **Before generating anything, check the registry.**
@@ -90,6 +127,8 @@ Before generating scenarios, read `docs/context/Testing_Patterns.md` if it exist
 **Every pattern in this file applies to every test plan you generate**, not just this feature. Bake them into the relevant scenarios and pass criteria. If the file doesn't exist, that's fine — it's created on the first Tier-2 retro.
 
 ### Step 2: Extract Test Dimensions
+
+> If the project is **not** a browser web app, read **Stack Adaptation** above first — the dimensions below are web defaults to substitute, not a checklist to force.
 
 From the PRD and architecture docs, identify:
 
@@ -192,13 +231,15 @@ Within each role/tier group, order by dependency (tests that create state needed
 
 ### Step 5: Set Configuration
 
+> Non-web stacks: `dev_server`, `credentials_source`, and `parallel_isolation` are browser defaults — swap in the surface's command / fixture / isolation axis from **Stack Adaptation**. The self-pacing keys below stay as-is on every stack.
+
 ```yaml
 feature: {kebab-case-feature-name}
 evidence_dir: /tmp/test-evidence/{feature-name}
 roles_required: [{list of roles/tiers this feature touches}]
 async_timeout: {max seconds for the longest async operation}
-dev_server: http://localhost:{PORT}
-credentials_source: .env.local
+dev_server: http://localhost:{PORT}   # web default — non-web: replace with the run/build command (or omit)
+credentials_source: .env.local        # web default — non-web: fixture/env source, or "none" for single-user/library
 
 # v5.7+ self-pacing — testing-agent reads these
 default_action_timeout: 30s   # heuristic-fallback hard cap for any browser action without an explicit bracket

@@ -27,9 +27,22 @@ This is **just `git init`** — no GitHub remote required. The kit relies on loc
 
 If `git status` doesn't work in this directory, the workflow will break before Phase 3 finishes. You can add a remote (GitHub, GitLab, self-hosted) later — none of the kit's protocols require one.
 
+### 0.5 Classify the stack and pick the kit root (do this first — it shapes every later step)
+
+The kit's templates default to a **web app driven through a browser**. Most of those defaults are right for a web project and wrong for everything else, so settle two things before copying anything:
+
+**a) What kind of project is this?** Classify the testing surface — `web` · `mobile-native` (Android/iOS) · `desktop` (Tauri/Electron) · `python-data-app / pipeline` · `cli / library`. This single answer drives three downstream adaptations (all detailed in `docs/prompts/create-testing-agent.md` → **Stack Adaptation**):
+- **testing-agent shape** — non-web surfaces need the stack-rewritten base agent (drives `./gradlew`/`pytest`/native build instead of agent-browser; RAM-hygiene targets that stack's processes, not chromium).
+- **which slots are N/A** — a single-user/native/library project legitimately has *no* auth slot, *no* parallel-login capacity, *no* responsive dimension. Mark those slots `intentionally empty for <reason>` (don't delete them), and record the structural divergences in `docs/KIT_DEVIATIONS.md`.
+- **gate count** — a project with no standalone automated suite runs **four** gates, not five (Gate #2 folds; see `feature-lifecycle.md` Phase 5.8).
+
+If the stack is ambiguous, **stop and ask** rather than forcing browser shape onto a non-web project.
+
+**b) Where does the kit root live?** The kit assumes a single repo root, but it works anywhere a `docs/` + `.claude/` pair can sit next to a `git` root. In a **monorepo or package subfolder**, install the kit at the package you're working in (e.g. `agent/docs/`, `app/.claude/`) — not the repo root — and treat that package dir as "root" for every path the kit mentions. Whatever you choose, `docs/KIT_VERSION` must live there; upgrades detect the kit root by finding `KIT_VERSION`, so keep the pair together.
+
 ### 1. Copy the folders
 
-Copy both `docs/` and `.claude/` into your project root:
+Copy both `docs/` and `.claude/` into your project root (or your chosen package subfolder — see 0.5b):
 
 ```
 your-project/
@@ -112,6 +125,16 @@ The prompts in `docs/prompts/` are ready to use immediately:
 | `testing-retro.md` | **Gap B** — self-improvement loop for the browser testing-agent library. Run when manual testing or production finds a bug the testing-agent library should have caught. Auto-invoked from `bugfix.md` Phase 2.4 and `feature-lifecycle.md` Phase 5.1 | Paste into chat, replace `[INSERT BUG DESCRIPTION + WHICH AGENT(S) RAN]` |
 | `test-suite-retro.md` | **Gap A** — self-improvement loop for the unit/integration test suite. Run when a bug escaped unit tests; categorises the miss, logs to `test-suite-misses.md`, appends a Project Lesson to `Unit_Test_Writing_Guide.md` if generalisable. Auto-invoked from `bugfix.md` Phase 1.4 + 2.4 and `feature-lifecycle.md` Phase 5.1 | Paste into chat, replace `[INSERT BUG DESCRIPTION + WHICH TEST(S) PASSED OVER IT]` |
 
+### 6. Bootstrap a minimal test harness (fresh projects with no tests yet)
+
+The kit's lifecycle is **tests-first** (Phase 3 is red-green TDD; Phase 4.2 is a FULL SUITE GATE). A brand-new project often has **nothing to run** on day one — no test runner wired, no `test/` source set, no first test. Before the first feature, stand up the smallest harness that makes the lifecycle runnable:
+
+- Install/wire the stack's standard runner and add a **single trivial passing test** so the FULL SUITE GATE has something green to report (`vitest`/`jest` for JS/TS, `pytest` for Python, the Gradle/`androidTest` test source set for Android, `go test`/`cargo test` for Go/Rust, etc.).
+- Confirm the **single-run** command works (`npm run test:run`, `pytest`, `./gradlew test` — never watch mode) and record it in the `code-quality-agent.md` test-command slot.
+- Create the two recommended baseline files as empty: `docs/known-test-failures.md`, `docs/known-test-skips.md`.
+
+If the project's stack has **no automated test story at all** (e.g. a sideload-only native app), skip this — the lifecycle correctly runs **four** gates and Phase 4 becomes a build/sideload pipeline (see 0.5a and `feature-lifecycle.md` Phase 5.8). The point is to *decide* deliberately, not to discover on the first feature that Phase 4.2 has nothing to gate.
+
 ---
 
 ## What's Universal vs. What's Project-Specific
@@ -187,7 +210,8 @@ Phase 5: AI reconciles plan vs reality FROM GIT DIFFS (5.0 / 5.1),
          delegates to code-quality-agent (Gate #3),
                        context-docs-agent (Gate #4),
                        docs-auditor-agent (Gate #5),
-         all five verbatim gate blocks must appear before commit.
+         all five verbatim gate blocks must appear before commit
+         (four on suite-less stacks — no Test-Suite gate; build/sideload proof folds into Gap A).
 ```
 
 Bugs and debug issues use standalone protocols with one stop point each (after investigation/diagnosis, before fix).

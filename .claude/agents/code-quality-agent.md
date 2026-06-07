@@ -242,7 +242,7 @@ CODE QUALITY GATE (Pre-Test):
 
 **Line 2 must show zero open vulnerabilities** — first-pass findings must be fixed before Phase 4 begins, exactly as in post-test mode. Pre-test does not get a second scan, so the first scan must end CLEAN before the gate prints.
 
-This block is NOT one of the four Phase 5.8 final gates — it's a pre-flight quality bar. Phase 4 must not start until this block prints clean.
+This block is NOT one of the five Phase 5.8 final gates — it's a pre-flight quality bar. Phase 4 must not start until this block prints clean.
 
 ### Post-Manual-Testing Mode (Phase 5.5) — 10-item full gate
 
