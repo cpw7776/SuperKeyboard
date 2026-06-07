@@ -68,13 +68,23 @@ class KeyboardView @JvmOverloads constructor(
     private fun rebuildLayout() {
         keys = KeyboardLayout.getLayout(keyboardState.layoutPage)
         flatKeys = keys.flatten()
+        // getLayout() returns fresh Key objects with empty bounds. layoutKeys() normally
+        // assigns those bounds from onSizeChanged — but that callback does NOT fire when the
+        // input view is reused at the same size (reopening the keyboard, or switching layout
+        // pages mid-session). Without re-laying-out here, every key keeps empty bounds and
+        // onDraw skips them all → blank keyboard with dead touch targets. Re-lay-out
+        // immediately whenever we already know our size; the size==0 first build is handled
+        // by the onSizeChanged path.
+        if (width > 0 && height > 0) {
+            layoutKeys(width.toFloat(), height.toFloat())
+        }
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         val width = MeasureSpec.getSize(widthMeasureSpec)
         val rowCount = keys.size
         val keyHeight = width / 10f * 1.1f  // Proportional key height
-        val totalHeight = (rowCount * keyHeight + theme.toolbarHeight).toInt()
+        val totalHeight = (rowCount * keyHeight).toInt()
         setMeasuredDimension(width, totalHeight)
     }
 
@@ -87,14 +97,14 @@ class KeyboardView @JvmOverloads constructor(
         val rowCount = keys.size
         if (rowCount == 0) return
 
-        val keyHeight = (viewHeight - theme.toolbarHeight) / rowCount
+        val keyHeight = viewHeight / rowCount
         val padding = theme.keyPadding
 
         for (rowIndex in keys.indices) {
             val row = keys[rowIndex]
             val totalWeight = row.sumOf { it.widthWeight.toDouble() }.toFloat()
             val keyUnitWidth = viewWidth / totalWeight
-            val y = theme.toolbarHeight + rowIndex * keyHeight
+            val y = rowIndex * keyHeight
 
             var x = 0f
             for (key in row) {
@@ -114,12 +124,8 @@ class KeyboardView @JvmOverloads constructor(
         // Background
         canvas.drawColor(theme.colors.keyboardBackground)
 
-        // Draw toolbar area background
-        canvas.drawRect(0f, 0f, width.toFloat(), theme.toolbarHeight, Paint().apply {
-            color = theme.colors.toolbarBackground
-        })
-
-        // Draw keys
+        // Draw keys. The AI toolbar is a separate sibling view above this one, so there is no
+        // internal toolbar strip — keys sit flush at the top with no dead space.
         for (key in flatKeys) {
             drawKey(canvas, key)
         }

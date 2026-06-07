@@ -51,7 +51,7 @@
 
 | # | Bug | Severity | Status | Report |
 |---|-----|----------|--------|--------|
-| — | None tracked yet | — | — | — |
+| 1 | Keyboard blank (no keys, dead touches) on reopen / layout-page switch | P0 | Fixed v0.1.2 (2026-06-07) | `docs/bugs/2026-06-07-blank-keyboard-on-reopen.md` |
 
 (Several SQLCipher integration issues were fixed during Phase 1 — see CHANGELOG / git history commits `5204f34`–`feba9d3`.)
 

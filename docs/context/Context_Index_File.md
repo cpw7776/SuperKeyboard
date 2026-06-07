@@ -164,6 +164,7 @@ Also update:
 | `docs/context/PRODUCTION_READY.md` | Release criteria and milestone tracking |
 | `docs/context/Project_Authentication.md` | Permission & privacy model (no auth) |
 | `docs/mobile/Android_Build_and_Sideload.md` | APK build + sideload-to-device loop |
+| `docs/bugs/2026-06-07-blank-keyboard-on-reopen.md` | P0 bug report: keyboard blank on reopen (fixed v0.1.2) |
 
 ### Tests
 | File | Purpose |

@@ -116,7 +116,13 @@ These are fault-classes that produce **code that works in the demo and breaks in
 >
 > Each entry must include: date, the `fix(` commit (or bug ref) that motivated it, the rule, a short example, and one sentence on the fault that shipped.
 
-_No lessons yet. The first entries will land here when the first Phase 5.1 Gap C autopsy promotes a fault to a project lesson._
+### 2026-06-07 — Custom-View model rebuild must recompute layout-derived state, not wait for `onSizeChanged` (bug-class)
+
+- **Motivating fix:** reconcile of the blank-keyboard P0 — `docs/bugs/2026-06-07-blank-keyboard-on-reopen.md`.
+- **Rule:** In a custom `View` that draws and hit-tests from per-element geometry (rectangles, paths, positions), any code path that **rebuilds the element model** must also **recompute that geometry** when the view is already sized. Do not rely solely on `onSizeChanged()` to assign it — that callback fires only when the size actually *changes*, and **does not fire when the view is reused at the same size** (IME input-view caching across show/hide, RecyclerView rebind, fragment view reuse, layout-page swaps).
+- **Example:** `KeyboardView.rebuildLayout()` swapped in fresh `Key` objects (empty `bounds`) but left `layoutKeys()` to `onSizeChanged`; on reopen at the same size the keys kept empty bounds → `onDraw`/`onTouchEvent` skipped every key → blank keyboard, dead touches. Fix: recompute bounds inside `rebuildLayout()` when `width > 0 && height > 0`.
+- **Fault that shipped:** layout-derived state (`Key.bounds`) desynced from a rebuilt model because its only recompute trigger was size-gated — a stale-derived-state class.
+- **Smell test when writing a custom View:** if `onMeasure`/`onSizeChanged`/`onLayout` is the *only* place geometry is assigned, ask "what happens when the model changes but the size doesn't?" If the answer is "nothing recomputes," that's this bug waiting to happen.
 
 ---
 
