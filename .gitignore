@@ -14,3 +14,5 @@ local.properties
 *.aab
 *.jks
 *.keystore
+# ...except the shared persistent debug keystore — sideload signature must be stable across machines
+!keystore/superkeyboard-debug.keystore

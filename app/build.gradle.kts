@@ -13,8 +13,20 @@ android {
         applicationId = "io.superkeyboard"
         minSdk = 24
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2
+        versionName = "0.1.1"
+    }
+
+    signingConfigs {
+        // Persistent debug keystore (committed) so every sideload build shares one
+        // signature → the phone installs updates in place. NOT for Play Store release.
+        // See docs/mobile/Android_Build_and_Sideload.md §2.4.
+        getByName("debug") {
+            storeFile = rootProject.file("keystore/superkeyboard-debug.keystore")
+            storePassword = "superkeyboard-debug"
+            keyAlias = "superkeyboard"
+            keyPassword = "superkeyboard-debug"
+        }
     }
 
     buildTypes {
