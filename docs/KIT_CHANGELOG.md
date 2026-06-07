@@ -50,6 +50,207 @@ Either path: every project, regardless of age, can land on the latest kit versio
 
 ---
 
+## [v5.17.1] — 2026-06-07
+
+**Patch — close a feedback gap v5.17 itself opened: make surfacing a found DEFECT mandatory, so "CLEAN is the success state" can't suppress a real bug.** Maintainer question right after v5.17 shipped: *"how do they surface the bugs that are found if they don't report back?"* v5.17 made the upgrade retro defect-gated to stop manufacturing churn — correct — but it also made the whole retro **optional** ("you MAY send… a courtesy, not a gate") and framed `CLEAN` as success. Right for killing enhancement padding; wrong for the **latent, non-blocking defect** — the upgrade completes, the agent notices a real kit bug it didn't trip on (the v5.10-anchor case: a project that rewrote `feature-lifecycle.md` upgraded *successfully*, yet the anchor was provably broken for the next project). An over-cautious reading of "CLEAN is the win, don't manufacture" could let that get absorbed into CLEAN instead of surfaced. This is a defect in v5.17's mechanism, not an enhancement. No lifecycle change.
+
+### Changed
+- **`upgrade-kit.md` Step 6.5 — DEFECT surfacing is now mandatory (STOP-level priority), independent of whether the courtesy retro is sent.** Three clarifications: (1) the opening now distinguishes "sending the full retro is optional" from "surfacing a DEFECT is not optional," and names the two retro-independent channels that already carry defects (a *blocking* defect STOPs in-flight; every non-`applied` outcome is written to the commit body + `KIT_DEVIATIONS.md` per Steps 4/4.6) — this retro is the channel for the **non-blocking** defect. (2) The DEFECT bullet explicitly includes the latent/non-blocking case ("a defect that didn't block you is still a defect — do NOT let `CLEAN` absorb it"), with the v5.10 anchor as the worked example. (3) `CLEAN` now means *no defects found* (latent included), **not** *the upgrade finished*.
+
+### Files touched
+- `docs/prompts/upgrade-kit.md` (Step 6.5 mandatory-defect-surfacing + latent-defect carve-out; v5.17.1 fingerprint row)
+- `docs/KIT_VERSION` (5.17 → 5.17.1)
+- `docs/KIT_CHANGELOG.md` (this entry)
+
+### Migration
+`inline-edit`. The only project-facing file is `docs/prompts/upgrade-kit.md` — **self-referential**, so use Step 4's special case (wholesale-refresh if vanilla; canonical content-diff + no-real-markers check). No downstream behaviour change; the effect is that the next upgrade's retro can't let a real bug exit as CLEAN.
+
+### Edits
+- **`docs/prompts/upgrade-kit.md` — self-referential; do NOT line-edit a vanilla copy.** If content-vanilla (diff against `archive/v5.17/docs/prompts/upgrade-kit.md`, or the v5.17 ref) with no real slot markers → **wholesale-replace**, log `applied (wholesale-replace, vanilla)`. If hand-edited: in Step 6.5, (a) change the opening so surfacing a DEFECT is mandatory/STOP-level while the full retro stays optional; (b) extend the DEFECT bullet to include the latent/non-blocking defect ("a defect that didn't block you is still a defect; do NOT let CLEAN absorb it"); (c) make CLEAN mean "no defects found," not "the upgrade finished." Role: the Findings classification list in Step 6.5.
+
+---
+
+## [v5.17] — 2026-06-07
+
+**Minor — make the upgrade retrospective defect-gated, so a clean upgrade stops manufacturing change.** Driven by a maintainer observation, not a downstream retro: *"every kit upgrade comes back with a retrospective that we have to change something — surely not every time. Are we forcing them?"* We were. The kit solicited a retro with a **"top recommendations" section** (`docs/upgrading/v5.4-to-v5.5.md`), and an LLM handed a "top N recommendations" slot fills it even on a flawless upgrade — manufacturing downstream churn, since each "nice idea" risks becoming a release and releases are contracts with multiplied cost. Worse, the retro was a **phantom**: that prompt said "the retrospective `upgrade-kit.md` describes," but `upgrade-kit.md` Step 6 only ever defined a completion report. Evidence the slot over-produced: across the two v5.15→v5.16 retros, 8 recommendations → 2 real defects; the rest were enhancements / already-decided / already-covered. **This release flips the default: the success state of an upgrade is ZERO kit-change findings, reported proudly.** No lifecycle/phase/sub-agent change.
+
+### Added
+- **`upgrade-kit.md` Step 6.5 — the canonical, defect-gated upgrade retrospective.** Replaces the phantom reference. Sections: customizations preserved · drift caught · CLAUDE.md edits · **Findings**, where each finding is classified **DEFECT** (wrong result / forced deviation / false-STOP / false-pass / inconsistency → candidate for a release) or **ENHANCEMENT — queue-only** (nothing broken → backlog, never a release on its own), and a clean run reports `Findings: CLEAN — no kit changes indicated` and stops. Explicitly mirrors the forward lifecycle's Phase 5.1 discipline (every finding acted-on or NAMED-as-not; a zero-finding run still prints with every line `none`) — **this is a parity-restoring change: the upgrade retro was the lone retro lacking that anti-manufacturing discipline; the three self-improvement flows (feature-lifecycle / bugfix / reconcile) already had it, and are untouched.**
+
+### Changed
+- **`MAINTAINING.md` release checklist item 1 — release-decision gate before the bump.** Decide whether a finding earns a release AT ALL: defect → ship; enhancement → queue (never cut a release for enhancements alone). Names the slot-filling failure mode and the "weigh findings by what broke, not how many were listed" rule. Patch definition broadened to include "narrow defect fix to the upgrade tooling" (matching how v5.15.1 / v5.16.1 were actually used).
+- **`docs/upgrading/v5.4-to-v5.5.md` retrospective pointer** — was the lone migration prompt still soliciting "top recommendations"; now points to the defect-gated Step 6.5 and tells a clean upgrade to report `CLEAN`, not a suggestion list. (The v5.5-specific factual questions are kept — they ask what happened, not for recommendations.)
+
+### Housekeeping
+- **Backfilled `archive/v5.16/.claude/`** — the v5.16.1 release archived `archive/v5.16/docs/` but omitted `.claude/` (prior archives include both). Corrected; `archive/v5.16.1/` captured complete (docs + `.claude`).
+
+### Files touched
+- `docs/prompts/upgrade-kit.md` (Step 6.5 defect-gated retro; v5.17 fingerprint row)
+- `docs/upgrading/v5.4-to-v5.5.md` (retrospective pointer)
+- `MAINTAINING.md` (release-decision gate — maintainer-only, not shipped)
+- `docs/KIT_VERSION` (5.16.1 → 5.17)
+- `docs/KIT_CHANGELOG.md` (this entry)
+- `archive/v5.16/.claude/` (backfill), `archive/v5.16.1/` (new snapshot) — maintainer-only
+
+### Migration
+`inline-edit`. The only project-facing file is `docs/prompts/upgrade-kit.md` — **self-referential**, so use Step 4's special case (wholesale-refresh if vanilla; canonical content-diff + no-real-markers check). `docs/upgrading/v5.4-to-v5.5.md` is a kit-shipped migration prompt the project also carries a copy of — refresh it if vanilla, else `surface-absent`. No downstream behaviour change; the effect is that the *next* upgrade this project runs reports CLEAN instead of inventing recommendations.
+
+### Edits
+- **`docs/prompts/upgrade-kit.md` — self-referential; do NOT line-edit a vanilla copy.** Per Step 4's "self-referential edits to upgrade-kit.md" special case: if content-vanilla (diff against `archive/v5.16.1/docs/prompts/upgrade-kit.md`, or the v5.16.1 ref) with no real slot markers → **wholesale-replace**, log `applied (wholesale-replace, vanilla)`. If hand-edited: add the new `## Step 6.5 — Upgrade retrospective (defect-gated …)` section (role: between Step 6's next-chat-handoff and `## Rules`) and the `v5.17` fingerprint row.
+  - **Find (`docs/upgrading/v5.4-to-v5.5.md`):** the "Retrospective" paragraph soliciting `… missing migration content, top recommendations, effort breakdown). Send it to the kit maintainer …`
+  - **Replace:** the defect-gated pointer to Step 6.5 (`a clean upgrade reports Findings: CLEAN … do not manufacture recommendations`). If the project doesn't carry this migration prompt (already past v5.5), `surface-absent`.
+
+---
+
+## [v5.16.1] — 2026-06-07
+
+**Patch — fix a latent false-negative that v5.16 itself introduced, plus a conformance gap, both surfaced by the v5.15→v5.16 upgrade retros (a Tauri project + a Native-Android project).** v5.16's headline fix re-anchored misfiring fingerprint rows OFF divergence-prone files. For v5.10 it moved the anchor onto `feature-lifecycle.md`'s slot-free `kit v5.10+` prose, reasoning "every project has `feature-lifecycle.md` (Step 0 proved so)." The Tauri retro proved that reasoning wrong: a heavily-customized project rewrites `feature-lifecycle.md` *wholesale* (a 480-line project-shaped rewrite carrying the v5.10 capability under its own wording — the literal `kit v5.10+` string absent). So the v5.10 anchor still false-negated; v5.16 merely traded "non-web rewrite of `testing-agent.md`" for "heavily-customized rewrite of `feature-lifecycle.md`." **This is the same anchor-fragility class v5.16 set out to kill — `feature-lifecycle.md` is rewrite-prone just as `testing-agent.md` is.** Separately, the Android retro had to reconstruct the v5.15.1 "already on v5.15" action list from changelog prose because that entry — though classified `inline-edit` — shipped without the mandatory `### Edits` block. **All changes are to the upgrade tooling + a historical changelog entry; no lifecycle/phase/sub-agent change.**
+
+### Changed
+- **Fingerprint `v5.10` row re-anchored to the `## [v5.10]` `KIT_CHANGELOG.md` heading** (`upgrade-kit.md` Step 1) — rewrite-invariant, matching how v5.8 and v5.12 were fixed in v5.16. The changelog heading is present verbatim in every install no matter how heavily the project rewrote its prompts.
+- **Anchor-discipline preamble gains a third banned anti-pattern + a reordered preference list** (`upgrade-kit.md` Step 1; `MAINTAINING.md` rule 12). Third anti-pattern: *never assume vanilla prose survives in a rewritable prompt file — `feature-lifecycle.md` included.* Preference order is now (1) `KIT_CHANGELOG.md` heading [the only fully rewrite-invariant surface] → (2) file/dir presence → (3) a slot-free region of `feature-lifecycle.md` ONLY as a last resort (it `EXPECTED-FAIL (divergent)`s on projects that rewrote that file). v5.16 had `feature-lifecycle.md` regions at #1.
+- **Step 6 sanity reads the structurally-rewritten set deterministically** (`upgrade-kit.md`) — a canonical `awk`+`grep` over the `## Files structurally rewritten` section's backtick-wrapped paths, instead of "eyeball the prose." Codifies the kit's own "machine-readable beats prose-derived for anything an upgrade branches on" lesson for the divergence-aware verdict.
+- **`docs/KIT_DEVIATIONS.md` "Files structurally rewritten" section formalized as a machine-readable surface** — the leading backtick code-span is the parseable token; added a load-bearing note (mirroring the `Gate count:` line) and an explicit reminder that `feature-lifecycle.md` belongs there too if rewritten wholesale, not only `testing-agent.md`.
+
+### Added
+- **The missing `### Edits` block on the `## [v5.15.1]` entry** (this file) — the v5.4 required-entry-structure says an `inline-edit` release MUST carry Find/Replace pairs; v5.15.1 shipped the "already on v5.15" path as prose only, forcing downstream agents to reconstruct it. Now enumerated with anchor context.
+- **Fingerprint `v5.16.1` row** (`upgrade-kit.md` Step 1) — anchored on the new `rewrite-invariant` string in the anchor-discipline preamble (a tooling-file anchor; `upgrade-kit.md` is never rewritten).
+
+### Files touched
+- `docs/prompts/upgrade-kit.md` (Step 1 preamble third anti-pattern + reordered preference; v5.10 row re-anchored; v5.16.1 row added; Step 2.5 + Step 6 deterministic structurally-rewritten read)
+- `docs/KIT_DEVIATIONS.md` (Files-structurally-rewritten machine-readable format note)
+- `MAINTAINING.md` (rule 12 sharpened — maintainer-only, not shipped)
+- `docs/KIT_CHANGELOG.md` (this entry + the v5.15.1 `### Edits` backfill)
+- `docs/KIT_VERSION` (5.16 → 5.16.1)
+
+### Migration
+`inline-edit`. The only project-facing file is `docs/prompts/upgrade-kit.md`, which is **self-referential** — use Step 4's special case (wholesale-refresh if vanilla; the canonical content-diff + no-real-markers check). The `docs/KIT_DEVIATIONS.md` change is to the *template's* explanatory format note only — refresh it if the project kept the kit boilerplate, else `surface-absent`. No lifecycle change; the win is that the *next* upgrade fingerprints `v5.10` correctly on a project that rewrote `feature-lifecycle.md`.
+
+### Edits
+- **`docs/prompts/upgrade-kit.md` — self-referential; do NOT line-edit a vanilla copy.** Per Step 4's "self-referential edits to upgrade-kit.md" special case: if the project's copy is content-vanilla (diff against `archive/v5.16/docs/prompts/upgrade-kit.md`, or the v5.16 ref) with no real slot markers → **wholesale-replace** with the new kit's copy (`applied (wholesale-replace, vanilla)`). Only if the copy is hand-edited, apply the three changes surgically: (a) re-anchor the `v5.10` fingerprint row to `## [v5.10]`; (b) add the third anti-pattern + reorder the preference list in the Step 1 anchor-discipline preamble; (c) add the deterministic `awk`+`grep` to Step 6's divergence-aware verdict. Each has a role-based location (the v5.10 row in the Method-B table; the preamble blockquote above the table; the divergence-aware paragraph in Step 6) — match by role if the literal text drifted.
+  - **Find:** `docs/KIT_DEVIATIONS.md` "Files structurally rewritten" section header + its `> Format: ` blockquote.
+  - **Replace:** the machine-readable format note (backtick code-span = parseable token; load-bearing for Step 6; `feature-lifecycle.md` belongs here too). If the project rewrote this section's prose, log `surface-absent` and skip — the Step 6 grep works against any bullet list whose paths are backtick-wrapped.
+
+---
+
+## [v5.16] — 2026-06-07
+
+**Minor — upgrade-system robustness (the convergent cluster from three same-week v5.14→v5.15 retros) + a native-mobile worked example.** Venice Logger, Personal Agent, and a Fossify-based Android app independently surfaced the same class of upgrade-machinery defects: detection that false-negatives on legitimately-customized projects, sanity checks that false-STOP on deliberately-divergent files, and brittle migration anchors. Same lineage as v5.6/v5.11/v5.13. **All changes are to the upgrade tooling + prompt guidance — no lifecycle/phase/sub-agent change.**
+
+### Changed
+- **Fingerprint anchor discipline (`upgrade-kit.md` Step 1) — re-anchored three misfiring rows.** A fingerprint MUST sit on stack-invariant, slot-free, non-divergence-prone content. Fixed: **v5.12** anchored on `calibration, not commandments` — which lives *inside* the `parallel-testing-capacity` `[CUSTOMIZE]` slot, so any project that filled the slot failed its own fingerprint → re-anchored to the `## [v5.12]` changelog heading. **v5.8 / v5.10** anchored on `testing-agent.md` (REQUIRES_INPUT / Parallel-Run Mode) — permanently absent on non-web projects that rewrite that file → re-anchored to the `## [v5.8]` changelog heading and to `feature-lifecycle.md`'s slot-free `kit v5.10+` prose. Added an "Anchor discipline" preamble banning slot-bound and divergence-prone anchors going forward.
+- **Step 6 sanity is now divergence-aware.** A fingerprint whose anchor file is listed *structurally rewritten* in `KIT_DEVIATIONS.md` reports **`EXPECTED-FAIL (divergent)`**, not `FAIL → STOP`. Both Android runs hit misleading "a step was skipped" STOPs on their rewritten `testing-agent.md`. Verdicts are now `PASS` / `EXPECTED-FAIL (divergent)` / `FAIL (real)`.
+- **`create-testing-agent.md` Stack Adaptation gains a native-mobile worked example.** Two Android projects re-derived the same set (divergent testing-agent, parallel N/A, Pattern B N/A-unless-Room, gate count depends on whether a JVM suite exists). Pre-answered as an *illustration, not an enforced profile* — keeps "adapt, don't dictate" while sparing the next Android/iOS project the re-derivation. Explicitly warns **not** to presume four gates (Fossify has a JVM suite → five; Venice Logger is suite-less → four).
+
+### Added
+- **`upgrade-kit.md` Step 1.6 — marker-vs-content reconciliation.** When the `KIT_VERSION` marker (Method A) is *ahead* of what the content corroborates (highest fingerprint match / git history), it's an **over-stamped marker** (a prior pass stamped without applying, or skipped a step — Fossify's marker read 5.5 while content was 5.4). Surfaced as a first-class STOP; the upgrade proceeds from the *reconciled* version, not the bare marker.
+- **`upgrade-kit.md` Step 3 — sanctioned "wholesale-refresh + re-inject slots" strategy** for badly-trailing files (a v5.5→v5.15 jump found it far cleaner than replaying 10 per-release edits), with explicit slot-parity preconditions; named `refresh+reinject` in the plan table.
+- **`upgrade-kit.md` Step 2.5 — two lints:** a `customize-token-leftover` lint (a filled slot whose body still contains the literal `[CUSTOMIZE]` token), and a **`docs/README.md` identity check** (confirm it's the kit README via a `## Quick Setup` signature, else treat kit-README edits as `surface-absent` — product READMEs collide at the same path constantly).
+- **`MAINTAINING.md` — three release-author rules:** (10) migration-prompt anchors must pair an exact anchor with a role-based semantic fallback (a brittle "after the Modes block" broke on a hand-edited file); (11) every migration ships a verification grep-triplet, stack-aware for stack-dependent assertions; (12) fingerprint rows must be re-anchored onto stack-invariant, slot-free content.
+
+### Deferred (not in this release)
+- **Per-file `KIT_FILE_VERSION` stamp** (Personal Agent rec 2). Valuable for O(1) per-file classification + behind-vanilla detection, BUT it reverses the kit's documented "the bundle is one version; per-file version stamps are no longer used" decision (`KIT_CHANGELOG.md` intro + `feature-lifecycle.md` header). That reversal deserves its own deliberate decision rather than riding in on a robustness release — queued in `MAINTAINER_LOG.md`. Step 1.6 (over-stamped marker) was implemented WITHOUT depending on it (corroborates via fingerprint + git history).
+
+### Files touched
+- `docs/prompts/upgrade-kit.md` (Step 1 anchor discipline + 3 re-anchored rows + v5.16 row; Step 1.6 marker reconciliation; Step 2.5 two lints; Step 3 refresh+reinject; Step 6 divergence-aware sanity)
+- `docs/prompts/create-testing-agent.md` (native-mobile worked example in Stack Adaptation)
+- `docs/upgrading/v5.14-to-v5.15.md` (Phase 3 anchor fallback — retrofit of rule 10)
+- `MAINTAINING.md` (rules 10–12; maintainer-only, not shipped)
+- `docs/KIT_VERSION` (5.15.1 → 5.16)
+- `docs/upgrading/v5.15.1-to-v5.16.md` (NEW)
+- `docs/KIT_CHANGELOG.md` (this entry)
+
+### Migration
+`migration-prompt-required` — `docs/upgrading/v5.15.1-to-v5.16.md`. Almost entirely refreshes of two tooling/prompt files (`upgrade-kit.md`, `create-testing-agent.md`) — wholesale-refresh if vanilla, surgical if hand-edited. No downstream lifecycle change; the win is that the *next* upgrade this project runs is more robust.
+
+---
+
+## [v5.15.1] — 2026-06-07
+
+**Patch — fix a correctness bug that v5.15 itself introduced: the gate-count migration could corrupt a *correct* four-gate (suite-less) project.** Surfaced same-week by three downstream upgrade retros (Venice Logger + Personal Agent + a Fossify-based Android app, all on the v5.14→v5.15 path). v5.15's migration said "grep `code-quality-agent.md` for `four ... final gates` → fix to five" with **no suite-less guard** — but a suite-less project that legitimately runs **four** gates carries the *textually identical* string as a correct value, not the v5.14 wording bug. A literal run would have "fixed" a correct file into a wrong one, and the paired Phase 5 sanity grep (`no "four" remains`) would then false-fail on the right answer. This is the **same bug-class as P1.3, inverted** — and the deeper lesson is that any count-based bugfix/sanity grep over a *stack-dependent* value must branch on the stack signal, never assert one stack's value as universal.
+
+### Changed
+- **`docs/upgrading/v5.14-to-v5.15.md` (the migration) — gate-count bugfix is now suite-less-guarded.** Phase 1 determines the project's gate count (FIVE = has a standalone suite / FOUR = suite-less) **before** the bug check; the `four → five` fix and the "no four remains" sanity grep apply **only to five-gate projects**. For four-gate projects, "four" is the correct sanctioned count and is left untouched (the inverse sanity assertion holds). The migration now delivers the v5.15.1 patch level (stamps `5.15.1`); there is no separate v5.15→v5.15.1 hop.
+- **`docs/prompts/feature-lifecycle.md` Phase 5.8 — the fold note was self-contradictory and is rewritten.** It previously said "runs **four** gates" but then "paste into **Gate #2's slot**" / "the other **four** gates remain" (implying five slots). Corrected: a suite-less project's four gates are Retrospective + Code Quality + Context Docs + Documentation, with **no Test-Suite gate block** at all; the build/sideload proof + any suite lesson **fold** to a project-designated landing (default: the Retrospective Gate's Gap A; or a project-named build gate). The fold target is now parameterized, not hard-coded to a non-existent "Gate #2 slot." Propagation one-liners in `AGENTS.md` / `CLAUDE_SNIPPET.md` / `README.md` aligned to match.
+- **`MAINTAINING.md` self-drift step (8) — new rule:** count-based bugfix/sanity greps MUST be stack-aware. The bug and the legitimate value can be textually identical; branch on the machine-readable `Gate count:` line in `KIT_DEVIATIONS.md` before applying or asserting a count.
+
+### Added
+- **`docs/KIT_DEVIATIONS.md` — a machine-readable `Gate count:` section** (`five` default / `four (suite-less)`). Upgrades read this line to branch deterministically instead of re-deriving suite-less-ness from prose every time (downstream projects reported hand-deriving it across v5.10, v5.14, v5.15). This is the load-bearing flag that lets a gate-count migration tell a stale `four` apart from a correct `four`.
+- **`docs/prompts/upgrade-kit.md` — v5.15.1 fingerprint row** (`feature-lifecycle.md` Phase 5.8 contains `no Test-Suite gate block`).
+
+### Files touched
+- `docs/upgrading/v5.14-to-v5.15.md` (suite-less guard on Phase 1 bug check, Phase 4 bugfix, Phase 5 sanity greps; stamps 5.15.1)
+- `docs/prompts/feature-lifecycle.md` (Phase 5.8 fold note rewrite)
+- `docs/AGENTS.md`, `docs/CLAUDE_SNIPPET.md`, `docs/README.md` (fold one-liners aligned)
+- `docs/KIT_DEVIATIONS.md` (NEW machine-readable `Gate count:` section)
+- `docs/prompts/upgrade-kit.md` (v5.15.1 fingerprint row)
+- `MAINTAINING.md` (self-drift rule — count-greps must be stack-aware; maintainer-only)
+- `docs/KIT_VERSION` (5.15 → 5.15.1)
+- `docs/KIT_CHANGELOG.md` (this entry)
+
+### Migration
+`inline-edit` — **projects on v5.14 or earlier:** run the corrected `docs/upgrading/v5.14-to-v5.15.md`; it now lands you safely on v5.15.1 regardless of gate count (the `### Edits` below do NOT apply to you — the migration prompt owns the edits). **Projects already on v5.15** (stamped `5.15`): the bug never corrupted you if you upgraded carefully, but apply the `### Edits` below (four vanilla-wording refreshes + add the `Gate count:` section + re-stamp). No structural change.
+
+### Edits
+> Applies ONLY to a project already stamped `5.15`. All four wording edits are to **vanilla, slot-free** prose — if any target string is absent (the project rewrote that file/section), log `surface-absent` and skip it; the gate-count fold semantics are unchanged either way. Match by role (the named section heading) if the literal text drifted.
+
+1. **`docs/AGENTS.md`** — under the `## The five gates (Phase 5.8 — no merge without all five)` heading.
+   - **Find:** `> Stack-dependent: a project with **no standalone automated test suite** runs **four** — Gate #2 folds into the Phase 4.2 build/sideload proof and any suite lesson goes to the retro's Gap A. See `feature-lifecycle.md` Phase 5.8 for the fold rule. "Five" is the default; "four" is the sanctioned reduction for suite-less stacks.`
+   - **Replace:** `> Stack-dependent: a project with **no standalone automated test suite** runs **four** (Retrospective + Code Quality + Context Docs + Documentation) — there is **no Test-Suite gate block**; the build/sideload proof + any suite lesson fold into the retro's Gap A (or a project-named build gate). See `feature-lifecycle.md` Phase 5.8 for the fold rule. "Five" is the default; "four" is the sanctioned reduction for suite-less stacks (set `Gate count: four (suite-less)` in `KIT_DEVIATIONS.md`).`
+
+2. **`docs/CLAUDE_SNIPPET.md`** — the suite-less blockquote under the "five verbatim gate blocks" sentence.
+   - **Find:** `> Suite-less stacks (native-mobile sideload, CLI build, data-app smoke run) run **four**: Gate #2 (Test-Suite Summary) folds into the Phase 4.2 build/sideload proof and any suite lesson goes to the retro's Gap A. See `feature-lifecycle.md` Phase 5.8.`
+   - **Replace:** `> Suite-less stacks (native-mobile sideload, CLI build, data-app smoke run) run **four** (Retrospective + Code Quality + Context Docs + Documentation) — no Test-Suite gate block; the build/sideload proof + any suite lesson fold into the retro's Gap A (or a project-named build gate). See `feature-lifecycle.md` Phase 5.8; flag it with `Gate count: four (suite-less)` in `KIT_DEVIATIONS.md`.`
+
+3. **`docs/README.md`** — the suite-less line inside the Phase-5 ASCII flow.
+   - **Find:** `         (four on suite-less stacks — Gate #2 folds into the build/sideload proof).`
+   - **Replace:** `         (four on suite-less stacks — no Test-Suite gate; build/sideload proof folds into Gap A).`
+
+4. **`docs/prompts/feature-lifecycle.md`** — the Phase 5.8 `> **Gate count is stack-dependent …**` blockquote.
+   - **Find:** the blockquote ending `… and record any suite-level lesson the missing runner would have carried under the Retrospective Gate's **Gap A**. This is a fold, not a skip — the other four gates remain mandatory, and the proof lines are still pasted verbatim. Do **not** scaffold an empty suite just to reach five, and do **not** drop the proof to justify four. (The kit's stamped count is "five"; "four" is the sanctioned reduction for suite-less stacks, recorded once in `docs/KIT_DEVIATIONS.md`.)`
+   - **Replace:** the rewritten blockquote whose end-state reads `… runs **four** gates: Retrospective + Code Quality + Context Docs + Documentation. There is **no Test-Suite gate block** in the final paste …` and parameterizes the fold target (default Gap A; or a project-named build gate), ending `… set the machine-readable `Gate count: four (suite-less)` line in `docs/KIT_DEVIATIONS.md` so upgrades branch on it deterministically and never mistake a *correct* "four" for the historical v5.14 "four-gates" wording bug.)` (Copy the current vanilla blockquote from the new kit's `feature-lifecycle.md` Phase 5.8 verbatim — it is slot-free.)
+
+5. **`docs/KIT_DEVIATIONS.md`** — add the machine-readable `## Gate count (machine-readable)` section (copy from the new kit's `docs/KIT_DEVIATIONS.md`) if absent. Default line: `Gate count: five (kit default — standalone automated suite present)`; suite-less projects set `four (suite-less)`.
+
+6. **`docs/KIT_VERSION`** — re-stamp to `5.15.1`.
+
+---
+
+## [v5.15] — 2026-06-06
+
+**Minor — operationalize stack-universality at the kit's birth points, make the gate count honestly stack-dependent, and harden the adopt/upgrade flows for non-root and pre-marker installs.** Driven by real cross-project adoption feedback: 8 projects brought to v5.14 in one batch (native Android, Tauri desktop, Capacitor mobile, Python/Streamlit, Next.js, Vite SPA) — see `retrospectives/2026-06-06-cross-project-v5.14/`. The recurring signal: **6/8 projects are not web apps, yet the kit's templates default to "a web app driven through a browser"** and every non-web project had to hand-remap the testing-agent, the parallel-testing axes, and the auth/login slots. The kit already *preached* stack-portability in prose (`feature-lifecycle.md` Phase 4's "universal concept, browser-default primitives") but never *operationalized* it at the two places a project's testing setup is born — `create-testing-agent.md` and the adoption flow. v5.15 closes that gap with a **Stack Adaptation** layer (browser = default, not assumption) rather than a rigid stack-profile taxonomy — keeping the kit's "adapt, don't dictate" principle. It also fixes a genuine v5.14 vanilla inconsistency (a leftover "four gates") and acknowledges that suite-less stacks legitimately run **four** gates, not five.
+
+**No new phases, sub-agents, or restructuring** — every change is guidance/wording added to existing prompts and templates.
+
+### Added
+- **`create-testing-agent.md` — a "Stack Adaptation" section** (read before generating). Declares the browser vocabulary a *default*, classifies the testing surface (`web` / `mobile-native` / `desktop` / `python-data-app` / `cli-library`), and gives a substitution table (how you drive it · what "one step" is · how you observe · pass-evidence · `dev_server`/`credentials_source` equivalents · parallel-isolation axis). Steps 2 and 5 gained pointers so a generator entering mid-file can't miss it. The existing browser-shaped body is untouched — it's now explicitly the web default to substitute, not a checklist to force.
+- **`README.md` Quick Setup step 0.5 — "Classify the stack and pick the kit root"** (do first; it drives testing-agent shape, which slots are N/A, and the gate count) **and step 6 — "Bootstrap a minimal test harness"** for fresh projects that have nothing for the tests-first lifecycle to run on day one (with an explicit "skip if the stack has no automated suite — run four gates" branch).
+- **`feature-lifecycle.md` Phase 5.8 — explicit stack-dependent gate-count rule.** Five gates with a standalone automated test suite; **four** without — Gate #2 (Test-Suite Summary) *folds* into the Phase 4.2 build/sideload proof and any suite lesson goes to the Retrospective Gate's Gap A. A fold, not a skip: the proof lines are still pasted, the other four gates remain mandatory, and the reduction is recorded once in `KIT_DEVIATIONS.md`. Propagated as one-line notes to `AGENTS.md`, `CLAUDE_SNIPPET.md`, `README.md`.
+- **`upgrade-kit.md` — "Marker backfill" subsection (Step 2.5)** so a pre-v5.4 / markerless install comes out of the upgrade marker-safe: preserved customizations that don't map to a vanilla slot get wrapped in fresh `project-<name>` markers and recorded in `KIT_DEVIATIONS.md`, making the *next* upgrade mechanical instead of another fragile anchor hunt.
+- **`upgrade-kit.md` — kit-root detection (Inputs §3)**: locate the kit by finding `docs/KIT_VERSION`, not by assuming the repo root, so monorepo (`agent/docs/`) and subfolder installs work; treat that dir as "root" for every path.
+
+### Changed
+- **`.claude/agents/code-quality-agent.md` — BUGFIX:** one leftover `"NOT one of the four Phase 5.8 final gates"` → `"five"`. The v5.13→v5.14 migration updated the two `Gate #2 → Gate #3` references but missed this third spot; downstream projects that matched vanilla preserved the inconsistency. (Caught independently by two projects.)
+- **`.claude/commands/kit-adopt.md`** (maintainer-local launcher) — step 1 now leads with stack-classification + kit-root choice; new step 8 bootstraps a test harness.
+
+### Files touched
+- `docs/prompts/create-testing-agent.md` (Stack Adaptation section + Step 2/Step 5 pointers)
+- `docs/prompts/feature-lifecycle.md` (Phase 5.8 stack-dependent gate-count note)
+- `docs/README.md` (Quick Setup 0.5 stack+root, step 6 bootstrap harness, five/four-gate note)
+- `docs/AGENTS.md` (four-on-suite-less note under "The five gates")
+- `docs/CLAUDE_SNIPPET.md` (four-on-suite-less note under Post-Feature Gates)
+- `docs/prompts/upgrade-kit.md` (Inputs §3 kit-root detection; Step 2.5 Marker-backfill subsection; Step 1 fingerprint row for v5.15)
+- `.claude/agents/code-quality-agent.md` (four → five bugfix)
+- `.claude/commands/kit-adopt.md` (maintainer-local — stack-first + bootstrap step)
+- `docs/KIT_VERSION` (5.14 → 5.15)
+- `docs/upgrading/v5.14-to-v5.15.md` (NEW)
+- `docs/KIT_CHANGELOG.md` (this entry)
+
+### Migration
+`migration-prompt-required` — `docs/upgrading/v5.14-to-v5.15.md`. Most edits are slot-free additive guidance, but the gate-count change touches `feature-lifecycle.md` Phase 5.8 and four propagation surfaces, and the `code-quality-agent.md` bugfix must reach projects that matched buggy vanilla. The migration wholesale-refreshes vanilla files, applies the four→five fix wherever the buggy string survives, and is **especially relevant to non-web projects** — it points them at the new Stack Adaptation section and lets them record a sanctioned **four-gate** reduction in `KIT_DEVIATIONS.md` (retiring any ad-hoc local note that the lifecycle "doesn't fit our stack").
+
+---
+
 ## [v5.14] — 2026-06-06
 
 **Minor — the Phase 5 self-improvement retro becomes an unconditional, merge-blocking Retrospective Gate (now the FIRST of five Phase 5.8 gates), and gains a third bucket: Gap C — implementation/code lessons.** Phase 5.1's Gap A (unit/integration lessons via `test-suite-retro.md`) and Gap B (testing-agent lessons via `testing-retro.md`) were **conditional** ("If manual testing revealed bugs or issues…") and were NOT among the gates that block merge at Phase 5.8. In practice whole epics shipped with their manual-test misses un-retro'd: the bugs got fixed, but the durable lessons never got written — because the step was skippable, unlike the Documentation Gate, which always runs precisely *because* it's an enforced gate. v5.14 makes the retro **unconditional** (a sweep over every manual-test finding ∪ every `fix(` commit of the phase, with a recorded per-finding decision) and enforces it with a verbatim `RETROSPECTIVE GATE:` block in the same gate-block idiom as the Documentation Gate. The gate count rises **four → five** everywhere, with the Retrospective Gate as Gate #1 (chronologically earliest). **No new sub-agent** — the main agent (which already owns all of Phase 5) authors the block. The **"deliberately NOT lessoned" accounting line** is the crucial design choice: a polish-only finding becomes a NAMED line with a reason, not a silent skip — which lets teams keep the gate on a polish-only epic instead of (correctly, under the old design) wanting to skip it.
