@@ -15,6 +15,13 @@ This prompt is self-contained. Follow the steps in order. STOP at the marked poi
 
 2. **Path to the target project.** Usually the current working directory. The project should contain `docs/` and/or `.claude/` from a prior kit adoption.
 
+3. **The kit root inside the target — do not assume the repo root.** The kit can be installed at a package subfolder rather than the repo root (monorepos: `agent/docs/`; subfolder installs: `flashcard-app-upgrade/docs/`). Locate it by finding `KIT_VERSION`, not by assuming `./docs/`:
+   ```bash
+   # Find the kit root within the target (the dir whose docs/ holds KIT_VERSION):
+   find . -name KIT_VERSION -path '*/docs/KIT_VERSION' -not -path '*/node_modules/*' 2>/dev/null
+   ```
+   If it resolves to a subfolder, treat that subfolder as "root" for **every** path this prompt names (`docs/...`, `.claude/...`), and run git commands from the nearest enclosing git root. If `find` returns multiple hits (several packages each carry the kit), confirm with the user which one to upgrade. If it returns none but `docs/prompts/feature-lifecycle.md` exists somewhere, fall back to that file's parent-of-`docs/` as the kit root (a pre-`KIT_VERSION`, pre-v5.3 install).
+
 If either input is missing, STOP and ask the user.
 
 ---
@@ -63,11 +70,18 @@ Try these methods in order. The first that succeeds is authoritative.
 
 ### Method A — Read the version marker
 
-If `docs/KIT_VERSION` exists in the target project, read it. That single-line value IS the current version (e.g., `5.2`). Skip to Step 2.
+If `docs/KIT_VERSION` exists in the target project, read it. That single-line value IS the current version (e.g., `5.2`). **Then run Step 1.6 (marker-vs-content reconciliation) before trusting it** — a marker can be over-stamped (ahead of the actual file content).
 
 ### Method B — Fingerprint
 
 If no `KIT_VERSION` file exists, walk this decision tree against the target project's files. Take the **highest** version supported by **all** matching conditions.
+
+> **Anchor discipline (v5.16; sharpened v5.16.1 — read before trusting any row).** A fingerprint anchor MUST sit on **stack-invariant, slot-free, AND rewrite-invariant** content, or it false-negatives on legitimately-customized projects. Three anti-patterns burned real downstream upgrades and are now banned:
+> - **Never anchor on a `[CUSTOMIZE]` slot body.** A project that fills the slot can remove the anchor string and fail *its own* version fingerprint (pre-v5.16, the v5.12 row anchored on `calibration, not commandments` — which lives inside the `parallel-testing-capacity` slot).
+> - **Never anchor on `testing-agent.md` (or any file commonly listed *structurally rewritten* in `KIT_DEVIATIONS.md`).** Non-web projects rewrite it wholesale, so the anchor is permanently absent (pre-v5.16, the v5.8 and v5.10 rows anchored here → permanent false-negatives for every native/CLI project).
+> - **Never assume vanilla *prose* survives in a rewritable prompt file — `feature-lifecycle.md` included.** This is the v5.16.1 correction. v5.16 re-anchored v5.10 onto `feature-lifecycle.md`'s slot-free `kit v5.10+` prose, reasoning "every project has `feature-lifecycle.md` (Step 0 proved so)." But *having the file* is not *having the kit's vanilla wording*: a heavily-customized project rewrites `feature-lifecycle.md` wholesale (a real Tauri project carries the full v5.10 capability inside a 480-line project-shaped rewrite, under its own wording — the literal `kit v5.10+` string is absent). So a slot-free region of `feature-lifecycle.md` is only *marginally* safer than `testing-agent.md`; it trades "non-web rewrite" for "heavily-customized rewrite." Treat ANY prompt-file prose as rewrite-prone.
+>
+> Prefer, in order: (1) **the `docs/KIT_CHANGELOG.md` heading `## [vX.Y]`** — stack-invariant, slot-free, AND rewrite-invariant (present verbatim in every install no matter how heavily the project rewrote its prompts); the only fully divergence-proof surface, and the canonical choice for any release whose feature lives in a divergence-prone area. (2) **File/dir presence** (`docs/prompts/reconcile-change.md` exists, `.claude/commands/reconcile.md` exists) — also rewrite-invariant. (3) **A slot-free region of `feature-lifecycle.md`** — ONLY as a last resort, when no changelog-heading or file-presence signal distinguishes the release, and knowing it false-negatives on projects that rewrote that file (those land as `EXPECTED-FAIL (divergent: feature-lifecycle.md)` in Step 6, exactly like a rewritten `testing-agent.md`). When you add a row for a new release, apply this discipline and note the anchor's location class.
 
 | Check | If TRUE | If FALSE |
 |---|---|---|
@@ -82,19 +96,47 @@ If no `KIT_VERSION` file exists, walk this decision tree against the target proj
 | `.claude/agents/code-quality-agent.md` frontmatter says `model: opus` (not `sonnet`) | at least v5.5 | exactly v5.4 |
 | `docs/KIT_CHANGELOG.md` exists (renamed from `docs/CHANGELOG.md` in v5.6) | at least v5.6 | exactly v5.5 |
 | `docs/prompts/feature-lifecycle.md` contains the string `Sub-Agent Supervision Protocol` | at least v5.7 | exactly v5.6 |
-| `.claude/agents/testing-agent.md` Reporting Format contains the string `REQUIRES_INPUT` | at least v5.8 | exactly v5.7 |
+| `docs/KIT_CHANGELOG.md` contains the heading `## [v5.8]` *(re-anchored v5.16 — was `testing-agent.md`:`REQUIRES_INPUT`, which is absent on non-web projects that rewrite that file)* | at least v5.8 | exactly v5.7 |
 | `docs/prompts/reconcile-change.md` exists (or `.claude/commands/reconcile.md` exists) | at least v5.9 | exactly v5.8 |
-| `.claude/agents/testing-agent.md` contains the string `Parallel-Run Mode` (§0.5) | at least v5.10 | exactly v5.9 |
+| `docs/KIT_CHANGELOG.md` contains the heading `## [v5.10]` *(re-anchored v5.16.1 — v5.16 had moved this onto `feature-lifecycle.md`'s slot-free `kit v5.10+` prose, but that file is rewritten wholesale by heavily-customized projects, so the prose anchor still false-negated there; the changelog heading is rewrite-invariant)* | at least v5.10 | exactly v5.9 |
 | `docs/prompts/upgrade-kit.md` contains the string `Marker-matching discipline` | at least v5.11 | exactly v5.10 |
-| `docs/prompts/feature-lifecycle.md` §4.1p contains the string `calibration, not commandments` | at least v5.12 | exactly v5.11 |
+| `docs/KIT_CHANGELOG.md` contains the heading `## [v5.12]` *(re-anchored v5.16 — was `calibration, not commandments`, which lives inside the `parallel-testing-capacity` `[CUSTOMIZE]` slot)* | at least v5.12 | exactly v5.11 |
 | `docs/prompts/upgrade-kit.md` contains the string `Post-migration completeness reconciliation` | at least v5.13 | exactly v5.12 |
 | `docs/prompts/feature-lifecycle.md` contains the string `RETROSPECTIVE GATE` (Phase 5.1) | at least v5.14 | at most v5.13 |
+| `docs/prompts/feature-lifecycle.md` contains the string `Gate count is stack-dependent` (Phase 5.8) | at least v5.15 | exactly v5.14 |
+| `docs/prompts/feature-lifecycle.md` Phase 5.8 note contains the string `no Test-Suite gate block` | at least v5.15.1 | exactly v5.15 |
+| `docs/prompts/upgrade-kit.md` Step 1 contains the string `Anchor discipline` | at least v5.16 | exactly v5.15.1 |
+| `docs/prompts/upgrade-kit.md` Step 1 anchor-discipline preamble contains the string `rewrite-invariant` | at least v5.16.1 | exactly v5.16 |
+| `docs/prompts/upgrade-kit.md` contains the string `Upgrade retrospective (defect-gated` (Step 6.5) | at least v5.17 | exactly v5.16.1 |
+| `docs/prompts/upgrade-kit.md` Step 6.5 contains the string `DEFECT (always surface — mandatory` | at least v5.17.1 | exactly v5.17 |
 
 **Note on `model: inherit`:** Some projects deliberately override the model field to `inherit` so the agent runs on whatever model the orchestrator is using. Treat `inherit` as a valid third state — it satisfies the v5.5 check (the project intentionally overrode the kit default; do NOT flip it to `opus`). Log it as a project override in the customization inventory and proceed. If the project also documents this override in `docs/KIT_DEVIATIONS.md`, the inventory step will surface that automatically.
 
 **Report:** `Detected version: vX (method: KIT_VERSION marker / fingerprint).`
 
 If the fingerprint is ambiguous (e.g., partial hand-edits that don't match any version cleanly), STOP and present what you found. Ask the user which version they believe the project is on, or to confirm the highest-matching version.
+
+### Step 1.6 — Marker-vs-content reconciliation (catch an over-stamped `KIT_VERSION`)
+
+Method A trusts the `KIT_VERSION` marker — but the marker is just a file someone (or some past upgrade) wrote, and it can be **ahead of the actual content**: a prior pass stamped the version without applying the edits, or skipped a step. A real downstream case: a project's marker read `5.5` while git history + content proved the files were still at `5.4` (the v5.4→v5.5 step was never run). Method A alone would have run the whole chain against an inconsistent baseline.
+
+**Whenever Method A succeeds, cheaply confirm the content agrees before proceeding:**
+
+```
+1. Take the marker value vX (Method A).
+2. Gather corroboration from content: the highest Method-B fingerprint row that matches
+   (and a quick `git log --oneline -- docs/prompts/feature-lifecycle.md` if a git history exists —
+   the real downstream case was caught precisely because git history disagreed with the marker).
+3. Compare:
+   - content agrees with vX (>= the marker, or equal)        -> marker trusted; proceed.
+   - content is BEHIND the marker (highest corroboration vY < vX) -> OVER-STAMPED MARKER.
+```
+
+**On an over-stamped marker, STOP and surface it as a first-class case:**
+
+> "The `KIT_VERSION` marker says **vX**, but the project's actual content only corroborates **vY** (highest file stamp / fingerprint match). The marker is ahead of the files — a prior upgrade likely stamped without applying, or skipped a step. I recommend treating the **real** current version as **vY** and running the migration chain from there (the marker will be corrected to the true target at the end). Proceed on vY? (Or tell me the version you believe is correct.)"
+
+WAIT for confirmation. Once resolved, use the **reconciled** version as the upgrade's starting point — never the bare marker. (This is the inverse of the Step 2.5 *behind-vanilla* check, which finds individual stale files; this finds a wholesale stale *marker*.)
 
 ---
 
@@ -136,6 +178,7 @@ For each kit file in:
 3. Compare that content against the NEW kit's vanilla content for the same-named slot.
 4. If different → record as a customization: { file, slot-name, project-content, vanilla-content }.
 5. If same → mark slot as vanilla (no action needed during upgrade).
+6. LINT — leftover `[CUSTOMIZE]` token in a filled slot. If a slot's body differs from vanilla (it was filled) BUT still contains the literal `[CUSTOMIZE]` token, that token is a cosmetic leftover from install (the author kept it as a label or forgot to strip it). Flag it `customize-token-leftover: <file>:<slot-name>` in the inventory and offer to strip the bare token during the upgrade (it's harmless, but it muddies future "is this slot filled?" checks). Do NOT flag a slot whose body is still vanilla — there the `[CUSTOMIZE]` token is the legitimate unfilled-template marker.
 ```
 
 ### Pre-v5.4 fingerprint extraction
@@ -150,6 +193,27 @@ For each kit file (same list as above):
 4. Record differences as customizations.
 5. Note: pre-v5.4 customizations frequently CONSUMED the [CUSTOMIZE] marker (replaced its line with project content). If the project file has no [CUSTOMIZE] markers but the new kit's vanilla does, the slots were consumed at install — extract content by anchor instead (the heading or preceding sentence that introduces the slot).
 ```
+
+### Marker backfill — leave the project marker-safe (pre-v5.4 / markerless installs)
+
+Extraction above gets the customizations *out*; this step ensures they land *back* inside real slot markers, so the **next** upgrade is mechanical instead of another fragile anchor hunt. A pre-v5.4 (or otherwise markerless) install has its project specifics baked in with no markers — exactly the "confident drift" risk the kit warns about. Upgrading once is the cheapest moment to fix that permanently.
+
+```
+When re-injecting preserved customizations in Step 4 (into a target version that uses slot markers, v5.4+):
+1. Standard slots come marker-safe for free — the new vanilla file already carries
+   <!-- KIT:SLOT-BEGIN <name> --> … END around each slot, so anchored content dropped into
+   the right slot is now wrapped automatically. Verify each one closed correctly.
+2. Project customizations that DON'T map to any vanilla slot (a baked-in hand-edit outside the
+   kit's slot set — e.g. a project-specific rule added to a list, a rewritten callout):
+     a. Wrap it in a fresh paired marker with a new lowercase-kebab name:
+        <!-- KIT:SLOT-BEGIN project-<short-name> --> … <!-- KIT:SLOT-END project-<short-name> -->
+        (use the inline `# KIT:SLOT-BEGIN` form inside code/shell blocks).
+     b. Record it in docs/KIT_DEVIATIONS.md under "Project extensions to kit files" with the slot name.
+3. Structurally-divergent files (whole-file rewrites) are NOT backfilled — they have no kit slots to
+   align to and are already recorded as divergent. Leave them owned by the project.
+```
+
+After backfill, run the authoritative real-marker grep (Marker-matching discipline, above) over every touched file and confirm every preserved customization now sits inside a paired marker. Report `Marker backfill: N customizations now slot-wrapped (was markerless)` so the win is visible. From the next upgrade on, this project extracts mechanically like any v5.4+ install.
 
 ### Hand-edit detection (outside any slot)
 
@@ -171,10 +235,16 @@ For each kit file:
 2. Count overlapping heading anchors (h1/h2/h3 strings) and slot-marker names.
 3. If overlap < 25%, OR the project file's purpose visibly differs from the kit's (e.g. different stack name in the intro, different output contract), classify as STRUCTURALLY DIVERGENT.
 4. For structurally divergent files: do NOT plan slot-wrap or per-paragraph edits. Record once in the inventory and skip the file in Step 4. The project owns this file outright.
-5. If `docs/KIT_DEVIATIONS.md` exists in the project and lists the file under "structurally rewritten," the divergence is documented — proceed without surfacing as a surprise.
+5. If `docs/KIT_DEVIATIONS.md` exists in the project and lists the file under "structurally rewritten," the divergence is documented — proceed without surfacing as a surprise. Record each rewrite there in the machine-readable form (file path as a leading backtick code-span) so Step 6 can read the set deterministically (see Step 6's canonical grep and that section's format note).
 ```
 
 A structurally divergent file is NOT a problem. It's a deliberate project choice. Log it, skip per-file edits for it, continue.
+
+### `docs/README.md` — confirm it's the KIT readme, not the project's product readme (path collision)
+
+`docs/README.md` is a constant trap: the kit ships its setup guide there, but plenty of projects keep their **product** README at the same path (a monorepo package's `agent/docs/README.md`, a library's docs index, etc.). A README-targeting kit edit (e.g. v5.15's Quick Setup steps) must NEVER be applied to a product README.
+
+**Before any edit to `docs/README.md`, confirm identity by content, not path:** the kit README contains a `## Quick Setup` section (and "AI Dev Workflow Kit" near the top). If those signatures are **present** → it's the kit README; edit normally. If **absent** → it's the project's product README; treat every kit-README edit as **`surface-absent`** (the kit README simply wasn't adopted here — many projects fold it into their root `CLAUDE.md` instead) and record it once in `KIT_DEVIATIONS.md` ("kit README not adopted; `docs/README.md` is the product README"). Do NOT overwrite, merge into, or append kit content to a product README.
 
 ### Superset detection — project AHEAD of the kit (v5.11)
 
@@ -266,6 +336,17 @@ If a release's `Migration` line is missing or unclassified (older entries writte
 | 4 | v5.1 → v5.2 | `inline-edit` | Apply CHANGELOG v5.2 (Files touched: feature-lifecycle.md — 4 locations) |
 | 5 | v5.2 → v5.3 | `inline-edit` | Apply CHANGELOG v5.3 (Added: KIT_VERSION, upgrade-kit.md, moved CHANGELOG into docs/) |
 | 6 | v5.3 → v5.4 | `inline-edit` | Apply CHANGELOG v5.4 (Added: v1-to-v2.md migration prompt, slot markers across kit files, drift check + CLAUDE.md step in this prompt) |
+
+### Strategy for badly-trailing files: wholesale-refresh + re-inject slots (sanctioned)
+
+When a project is **many versions behind** (e.g. v5.5 → v5.15) and a given kit file is **VANILLA or cleanly slot-customized** (NOT structurally divergent, NOT hand-edited outside slots), you do **not** have to replay every intervening release's edits to that file one at a time. The sanctioned shortcut: **copy the new kit's current version of the file wholesale, then re-inject the project's slot bodies** (extracted in Step 2.5). One move lands every intervening change to that file, far more reliably than N fragile per-release edits — a downstream v5.5→v5.15 jump found this "much cleaner than 10 rounds of per-release edits." Name it in the plan table (`refresh+reinject`) so the user sees the strategy per file.
+
+**Preconditions (ALL must hold):**
+- The file is vanilla or slot-customized only — Step 2.5 found no out-of-slot hand-edits and no structural divergence.
+- **Slot parity:** the new kit's version of the file carries the same slot names the project's customizations target. A release may have added/renamed/removed slots — reconcile first: a NEW slot gets the kit default (or a project value if obvious); a REMOVED slot's customization is surfaced, not silently dropped.
+- The file isn't owned by a `migration-prompt-required` step that does something structural beyond editing it (let that migration prompt own it instead).
+
+For files that are hand-edited **outside** slots, or **structurally divergent**, do NOT wholesale-refresh — use surgical per-release edits, or skip (divergent, project-owned). This shortcut is for the common "trailing but clean" case — which is most files in a big jump.
 
 Present the plan as a numbered table. STOP for approval. Do not begin executing until the user confirms.
 
@@ -479,7 +560,21 @@ chore(kit): mark project at vN.M
 
 Re-run **Method B fingerprinting** from Step 1 (do NOT shortcut by reading the file you just wrote). Each fingerprint check should pass for the target version.
 
-If a fingerprint check fails, an upgrade step was skipped or applied incorrectly. STOP and surface the discrepancy.
+**Divergence-aware verdicts (v5.16; deterministic read v5.16.1) — a FAIL on a rewritten file is EXPECTED, not a failure.** Before treating any failed check as a problem, look at the anchor file. Read the rewritten-file set **deterministically — don't eyeball the prose**: each entry in the `## Files structurally rewritten` section of `docs/KIT_DEVIATIONS.md` leads with the file path as a backtick code-span (the machine-readable token — see that section's format note), so the canonical set is:
+
+```bash
+# The exact set of structurally-rewritten files this project declares.
+# Match only bullets that LEAD with a backtick path (`- `<file>` — reason`); the
+# leading-`- `` ` filter skips the section's explanatory `> ` note (whose prose
+# contains inline-code like `FAIL`, `feature-lifecycle.md`) AND any `- _example:_`
+# template line, so only real entries are returned.
+awk '/^## Files structurally rewritten/{f=1;next} /^## /{f=0} f' "$PROJECT_ROOT/docs/KIT_DEVIATIONS.md" \
+  | grep -E '^- `' | sed -E 's/^- `([^`]+)`.*/\1/'
+```
+
+If the failing check's anchor file is in that set (the project owns it; the kit's vanilla anchor legitimately doesn't exist there), report the check as **`EXPECTED-FAIL (divergent: <file>)`** and continue — it is NOT a skipped step. Only a check whose anchor file is vanilla/slot-customized (i.e., *should* carry the anchor) and still fails indicates a real skipped/mis-applied edit → STOP. Report each check as one of: `PASS` / `EXPECTED-FAIL (divergent)` / `FAIL (real — investigate)`. (This is why the v5.16 anchor-discipline above moved fingerprints OFF divergence-prone files: fewer EXPECTED-FAILs to reason about. Rows that still land on a project-rewritten file are the ones to mark EXPECTED-FAIL here.)
+
+A real FAIL (vanilla anchor file, anchor absent) means an upgrade step was skipped or applied incorrectly. STOP and surface the discrepancy. An all-`EXPECTED-FAIL`-or-`PASS` result is a clean upgrade — do **not** STOP on EXPECTED-FAILs, and do not describe them as "a step was skipped."
 
 If all checks pass, report to the user:
 
@@ -513,6 +608,24 @@ Resume the kit upgrade started in a prior session. Project root: /abs/path/to/pr
 ```
 
 If the upgrade fully completed (no deferred items, no judgment STOPs skipped, no `surface-absent` items needing follow-up), omit this block entirely. A handoff prompt with nothing to hand off is noise.
+
+---
+
+## Step 6.5 — Upgrade retrospective (defect-gated; send to the kit maintainer)
+
+After a clean Step 6 you MAY send the kit maintainer a short retrospective. **This section is the canonical definition of that retro** — older migration prompts referenced "the retrospective `upgrade-kit.md` describes" before one was actually defined here; this is it. Sending the *full* retro is a courtesy (the upgrade is already complete at Step 6) — **but surfacing a DEFECT is NOT optional. If you found one, it is reported to the user with the same priority as an in-flight STOP, whether or not you send the rest of the retro.** "Defect-gated, CLEAN is the success state" means *don't manufacture recommendations* — it does **not** mean stay quiet about a real bug. (Two channels already carry defects independently of this retro: a *blocking* defect STOPs the upgrade in-flight, and every non-`applied` outcome is written to the commit body + `KIT_DEVIATIONS.md` per Steps 4/4.6. This retro is the channel for the **non-blocking** defect — the one that didn't halt you but is still real.)
+
+**It is defect-gated, NOT a recommendation slot — and that distinction is the whole point.** An agent handed a section titled "top N recommendations" will invent N of them even on a flawless upgrade; that manufactures downstream churn (every "nice idea" risks becoming a release, and releases are contracts with multiplied cost). So this retro does **not** ask for recommendations. **The success state of an upgrade is ZERO kit-change findings.** Do not pad. (This mirrors the discipline the forward lifecycle's Phase 5.1 retro already enforces — every finding is either acted on or NAMED as deliberately-not-acted-on, and a zero-finding run still prints with every line `none`.)
+
+Report these sections:
+
+1. **Customizations preserved** — the slot / divergent inventory from Step 2.5, confirming nothing was clobbered. (Evidence the upgrade was safe, not a finding.)
+2. **Drift caught** — Step 3.5 result. `none` is the common, good answer.
+3. **CLAUDE.md edits** — mechanical-vs-judgment counts from Step 4.5.
+4. **Findings** — the gate. Classify each, or report `CLEAN`:
+   - **DEFECT (always surface — mandatory, STOP-level priority)** — the upgrade produced a *wrong result*, *forced you to deviate* from the prompt, false-STOPped, false-passed a sanity check, or left the project *internally inconsistent*. Something is actually broken in the kit. **This explicitly includes the LATENT, non-blocking defect: the upgrade completed fine, but you noticed a real kit bug it simply didn't trip on this time** — a fingerprint anchor that will false-negate for the next project, a stale or wrong instruction, a result you worked around. (The canonical case: the v5.10 fingerprint anchored on `feature-lifecycle.md` prose — a project that rewrote that file upgraded *successfully*, yet the anchor was provably broken for the next divergent project. Completing the upgrade did NOT make it not-a-defect.) **A defect that didn't block you is still a defect — surface it to the user with the minimal fix; do NOT let `CLEAN` absorb it.** Only defects are candidates for a kit release.
+   - **ENHANCEMENT — queue-only** — "this could be nicer" with nothing actually wrong (clearer wording, a convenience, a pre-answered example). List at most a couple, each labelled `ENHANCEMENT — queue-only`. **Enhancements do NOT justify a release on their own**; they sit in the maintainer's backlog until a defect-driven release can carry them.
+   - **CLEAN** — write `Findings: CLEAN — no kit changes indicated` **only when you found no defects** (latent ones included) — `CLEAN` means *no defects*, NOT merely *the upgrade finished*. Then stop the findings section there. Resist listing enhancements unless one genuinely nagged you during the run. **A clean upgrade with an empty findings section is exactly what a mature kit looks like — report it proudly, don't apologise for it with invented suggestions.**
 
 ---
 
