@@ -1,6 +1,6 @@
 # CLAUDE.md — SuperKeyboard
 
-> **SuperKeyboard** is a native Android IME (custom keyboard) built in Kotlin: Jetpack Compose settings app + classic-Views keyboard surface, Gradle (Kotlin DSL), Room + SQLCipher encrypted clipboard, DataStore settings. Offline, no accounts, privacy-first. This project uses the **AI Dev Workflow Kit** (`docs/KIT_VERSION` = 5.14).
+> **SuperKeyboard** is a native Android IME (custom keyboard) built in Kotlin: Jetpack Compose settings app + classic-Views keyboard surface, Gradle (Kotlin DSL), Room + SQLCipher encrypted clipboard, DataStore settings. Offline, no accounts, privacy-first. This project uses the **AI Dev Workflow Kit** (`docs/KIT_VERSION` = 5.17.1).
 
 ---
 
