@@ -197,3 +197,63 @@ The testing-agent equivalent (Gap B) lives in `docs/prompts/testing-retro.md` + 
 
 This project IS a native Android app and ships an APK. The canonical build/sideload reference is `docs/mobile/Android_Build_and_Sideload.md` (native Android, Kotlin DSL path). Read it before touching the build pipeline — it covers the persistent debug keystore pattern, `apksigner` signature verification, the Syncthing delivery loop, and troubleshooting. Manual on-device testing (install, enable the IME in Android Settings, exercise typing/clipboard/themes) is the primary Phase 4 verification surface.
 <!-- KIT:SLOT-END mobile-android -->
+
+---
+
+## Working with cmux (Orchestrator Mode)
+
+When the user asks me to **orchestrate** — run several epics/tasks in parallel as separate
+Claude sessions — follow these rules. I have the **cmux skill** (`~/.claude/skills/cmux`,
+plus
+`cmux-workspace`, `cmux-settings`, etc.); use it to look up any cmux operation rather than
+guessing. `cmux <command> --help` and the skill `references/` cover everything.
+
+**Hard rules (user preferences — do not deviate):**
+
+1. **One workspace, never a new one.** Run all parallel sessions as **tabs/panes inside the
+   user's current workspace**. Do NOT call `new-workspace`/`workspace create` for the work
+—
+   the user can't find sessions that land in a separate workspace. If a temp workspace ever
+gets
+   created, `move-surface` its surface back into the caller workspace and `close-workspace`
+the
+   empty one.
+2. **Always balanced, equal-on-screen tiling.** Split panes into symmetric halves so every
+   session gets equal space. Orientation (left/right vs top/bottom) doesn't matter; balance
+does:
+   2 → 1+1 side by side; 4 → 2×2; 6 → 3+3 (e.g. three top, three bottom). Use
+   `cmux split-off --surface <surface> <up|down|left|right>` to peel each surface into its
+own
+   visible pane; aim for even halves.
+3. **Name every tab.** `cmux tab-action --tab <surface> --action rename --title "Task ·
+Short"`.
+
+**How to launch a task into a tab (proven flow):**
+
+1. If isolation is wanted, create a git worktree + share root deps + a self-contained
+kickoff
+copy
+   them into the worktree or inline the scope in the kickoff file):
+   `git worktree add -b feature/<slug> .worktree/feature/<slug> <base>` then
+   `ln -s ../../../node_modules .worktree/feature/<slug>/node_modules` (adjust depth for
+the
+   repo's package manager / structure).
+2. Make a terminal tab in the caller's pane and send the launch command (`new-surface` has
+no
+   `--cwd`/`--command`, so use `send` + `send-key`):
+   `OUT=$(cmux new-surface --type terminal --pane <callerPane> --focus false)`
+   `S=$(echo "$OUT" | grep -oE 'surface:[0-9]+' | head -1)`
+   `cmux send --surface "$S" 'cd "<abs-path>" && claude --model opus "Read <KICKOFF>.md and
+follow it; if this project has a dev/feature lifecycle doc, follow it and STOP at its
+approval gates."'`
+   `cmux send-key --surface "$S" Enter`
+3. Then `split-off` each session's surface into a balanced layout and rename it.
+
+
+**Verify & monitor:** `cmux identify --json` (caller pane/surface), `cmux tree --workspace
+<ws>`
+(layout), `cmux top --workspace <ws> --processes --flat` (confirm each tab's session is
+alive).
+The user only answers decision questions in each pane; I coordinate merge order and keep
+sessions
+in separate file lanes to avoid conflicts.
