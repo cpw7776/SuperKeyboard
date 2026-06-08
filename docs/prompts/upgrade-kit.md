@@ -81,7 +81,7 @@ If no `KIT_VERSION` file exists, walk this decision tree against the target proj
 > - **Never anchor on `testing-agent.md` (or any file commonly listed *structurally rewritten* in `KIT_DEVIATIONS.md`).** Non-web projects rewrite it wholesale, so the anchor is permanently absent (pre-v5.16, the v5.8 and v5.10 rows anchored here → permanent false-negatives for every native/CLI project).
 > - **Never assume vanilla *prose* survives in a rewritable prompt file — `feature-lifecycle.md` included.** This is the v5.16.1 correction. v5.16 re-anchored v5.10 onto `feature-lifecycle.md`'s slot-free `kit v5.10+` prose, reasoning "every project has `feature-lifecycle.md` (Step 0 proved so)." But *having the file* is not *having the kit's vanilla wording*: a heavily-customized project rewrites `feature-lifecycle.md` wholesale (a real Tauri project carries the full v5.10 capability inside a 480-line project-shaped rewrite, under its own wording — the literal `kit v5.10+` string is absent). So a slot-free region of `feature-lifecycle.md` is only *marginally* safer than `testing-agent.md`; it trades "non-web rewrite" for "heavily-customized rewrite." Treat ANY prompt-file prose as rewrite-prone.
 >
-> Prefer, in order: (1) **the `docs/KIT_CHANGELOG.md` heading `## [vX.Y]`** — stack-invariant, slot-free, AND rewrite-invariant (present verbatim in every install no matter how heavily the project rewrote its prompts); the only fully divergence-proof surface, and the canonical choice for any release whose feature lives in a divergence-prone area. (2) **File/dir presence** (`docs/prompts/reconcile-change.md` exists, `.claude/commands/reconcile.md` exists) — also rewrite-invariant. (3) **A slot-free region of `feature-lifecycle.md`** — ONLY as a last resort, when no changelog-heading or file-presence signal distinguishes the release, and knowing it false-negatives on projects that rewrote that file (those land as `EXPECTED-FAIL (divergent: feature-lifecycle.md)` in Step 6, exactly like a rewritten `testing-agent.md`). When you add a row for a new release, apply this discipline and note the anchor's location class.
+> Prefer, in order: (1) **the `docs/KIT_CHANGELOG.md` heading `## [vX.Y]`** — stack-invariant, slot-free, AND rewrite-invariant (present verbatim in every install no matter how heavily the project rewrote its prompts); the only fully divergence-proof surface, and the canonical choice for any release whose feature lives in a divergence-prone area. *(This anchor is only sound because Step 5 refreshes the project's `KIT_CHANGELOG.md` copy wholesale on every upgrade path (v5.17.2) — the heading you anchor on resolves only if the project's copy is kept current. Before v5.17.2 the changelog was never propagated to the project on a pure inline-edit jump, so a heading at or near the target version would have false-negated Step 6 sanity. If you add a new changelog-anchored row, the Step 5 refresh is the invariant that makes it safe; do not weaken it.)* (2) **File/dir presence** (`docs/prompts/reconcile-change.md` exists, `.claude/commands/reconcile.md` exists) — also rewrite-invariant. (3) **A slot-free region of `feature-lifecycle.md`** — ONLY as a last resort, when no changelog-heading or file-presence signal distinguishes the release, and knowing it false-negatives on projects that rewrote that file (those land as `EXPECTED-FAIL (divergent: feature-lifecycle.md)` in Step 6, exactly like a rewritten `testing-agent.md`). When you add a row for a new release, apply this discipline and note the anchor's location class.
 
 | Check | If TRUE | If FALSE |
 |---|---|---|
@@ -109,6 +109,8 @@ If no `KIT_VERSION` file exists, walk this decision tree against the target proj
 | `docs/prompts/upgrade-kit.md` Step 1 anchor-discipline preamble contains the string `rewrite-invariant` | at least v5.16.1 | exactly v5.16 |
 | `docs/prompts/upgrade-kit.md` contains the string `Upgrade retrospective (defect-gated` (Step 6.5) | at least v5.17 | exactly v5.16.1 |
 | `docs/prompts/upgrade-kit.md` Step 6.5 contains the string `DEFECT (always surface — mandatory` | at least v5.17.1 | exactly v5.17 |
+| `docs/prompts/upgrade-kit.md` Step 5 contains the string `refresh the changelog copy` (heading) | at least v5.17.2 | exactly v5.17.1 |
+| `docs/KIT_CHANGELOG.md` contains the heading `## [v5.18]` *(anchored on the changelog heading, not the `.claude/skills/cmux-orchestrator/` file — the skill is an opt-in/removable capability, so file-presence would false-negate on projects that removed it; the heading is rewrite- and removal-invariant, kept current by Step 5)* | at least v5.18 | exactly v5.17.2 |
 
 **Note on `model: inherit`:** Some projects deliberately override the model field to `inherit` so the agent runs on whatever model the orchestrator is using. Treat `inherit` as a valid third state — it satisfies the v5.5 check (the project intentionally overrode the kit default; do NOT flip it to `opus`). Log it as a project override in the customization inventory and proceed. If the project also documents this override in `docs/KIT_DEVIATIONS.md`, the inventory step will surface that automatically.
 
@@ -401,6 +403,11 @@ Pass the customization inventory from Step 2.5 to the migration prompt. Migratio
        overlaps a hand-edit. Never clobber.
 4. `upgrade-kit.md` is a special instance: use its self-referential wholesale-refresh-if-vanilla check
    (Patch-release subsection below) rather than a line edit.
+5. `docs/KIT_CHANGELOG.md` is the other special instance: it appears in nearly every release's
+   `### Files touched` (as "this entry"), so it always lands in the at-risk remainder — but it is a
+   pure kit reference (never customized), so do NOT diff it region-by-region. It is refreshed wholesale
+   in Step 5 on every path; here just confirm Step 5 will run (it always does) and move on. Never treat
+   a stale changelog copy as a `conflict`.
 ```
 
 **The principle (per the kit's universal-drop-in design): the kit guides; the in-project agent reconciles the change against its own project.** The same release lands differently in a Next.js app, a Python pipeline, and a native-Android project — the reconciliation above is how each agent works out what "this file changed" means for *its* codebase, instead of the kit prescribing one outcome.
@@ -542,11 +549,19 @@ If the user prefers to handle deviations separately, skip the commit and surface
 
 ---
 
-## Step 5 — Stamp the project with the new version
+## Step 5 — Stamp the project with the new version (and refresh the changelog copy)
 
 Write the target version to `docs/KIT_VERSION` in the target project (overwrite if it exists, create if not). Single line, format `N.M` (no `v` prefix, trailing newline).
 
-**Note on idempotency.** Substantive migration prompts (`docs/upgrading/vX-to-vY.md` from v5.5 onward) write `docs/KIT_VERSION` themselves as part of their own phases. When the upgrade ran through one or more migration prompts in Step 4, the file already reads the target version by the time control reaches here — this step becomes a no-op and the commit is empty. That is expected; either skip the commit silently or fold the version stamp into the most recent migration commit. **Do not** treat the no-op as a failure. Step 5 still earns its keep on `trivial-noop`-only paths (e.g. v5.1→v5.2) where no migration prompt ran and nothing else updates the file.
+**Then refresh `docs/KIT_CHANGELOG.md` wholesale from the new kit (v5.17.2 — load-bearing for the fingerprint strategy, not optional).** The changelog is a pure kit reference: stack-invariant, slot-free, never hand-edited by a project (every release lists it in `### Files touched` as "this entry" — i.e. maintainer-side — so a project's copy only ever moves when an upgrade copies it). That makes it **always safe to overwrite** with the new kit's copy, exactly like `KIT_VERSION`:
+
+```bash
+cp "$NEW_KIT_ROOT/docs/KIT_CHANGELOG.md" "$PROJECT_ROOT/docs/KIT_CHANGELOG.md"
+```
+
+**Why this is mandatory and lives here (not buried in Step 4):** the kit's own fingerprint strategy (Step 1 anchor discipline) makes the `## [vX.Y]` changelog heading *the* canonical, preferred Method-B anchor — "the only fully rewrite-invariant surface." But that anchor only resolves if the project's changelog copy actually contains the heading, which requires the upgrade to keep that copy current. Nothing else guarantees it: Step 3 reads the changelog from the *new kit*, the inline-edit path treats "this entry" as maintainer-side and never propagates it, and Step 4's post-migration completeness net runs **only** on the `migration-prompt-required` path — so a pure inline-edit jump (no migration prompt) would otherwise leave the changelog frozen at the project's adopt-version and false-negate the next changelog-anchored row in Step 6. Step 5 always runs, on every path, which is why the refresh belongs here. (If the project carries the pre-v5.6 name `docs/CHANGELOG.md` and has not yet been renamed by the v5.6 migration, refresh whichever filename the project actually has; once renamed, only `KIT_CHANGELOG.md` exists.)
+
+**Note on idempotency.** Substantive migration prompts (`docs/upgrading/vX-to-vY.md` from v5.5 onward) write `docs/KIT_VERSION` themselves as part of their own phases. When the upgrade ran through one or more migration prompts in Step 4, the file may already read the target version by the time control reaches here — the version stamp half of this step becomes a no-op. That is expected; **do not** treat a no-op stamp as a failure. (The changelog refresh above is separate and still runs every time — it produces a real diff unless a migration prompt already copied the changelog, so Step 5 rarely commits truly empty.) The version stamp still earns its keep on `trivial-noop`-only paths (e.g. v5.1→v5.2) where no migration prompt ran and nothing else updates the file.
 
 Commit (only if there is a real diff to record):
 
