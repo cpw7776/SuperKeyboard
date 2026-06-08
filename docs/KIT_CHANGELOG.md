@@ -50,6 +50,69 @@ Either path: every project, regardless of age, can land on the latest kit versio
 
 ---
 
+## [v5.18] — 2026-06-08
+
+**Minor — new optional capability + new propagation surface: ship a `cmux-orchestrator` skill so every project (and future project) can run orchestrator mode, without a CLAUDE.md-section propagation problem.** Maintainer need: parallel "orchestrator mode" (several epics as separate Claude sessions tiled in one cmux workspace) was documented only as a CLAUDE.md section the maintainer had hand-added to *some* projects — stale projects on older kit versions never got it. A skill is the right primitive (an action with a trigger, self-advertising via its description) and a **user-level (global) skill** at `~/.claude/skills/cmux-orchestrator/` makes the propagation problem *disappear*: it's available in every project on that machine regardless of kit version. The kit also ships an in-repo copy so the capability **travels to other machines** that lack the global skill. Confirmed against Claude Code skill resolution: personal (global) overrides project, no collision; a skill file is read once per session (so self-improvement edits take effect next session). No lifecycle/phase/sub-agent/gate change — this is additive infrastructure.
+
+### Added
+- **`.claude/skills/cmux-orchestrator/SKILL.md`** — the kit-shipped (snapshot) copy of the orchestrator skill. Recipe for combining the existing `cmux*` operation skills into orchestrator mode: hard rules (one workspace, balanced equal tiling, named tabs), the proven per-task launch flow (worktree + `cmux new-surface`/`send`/`send-key` + `split-off`), verify/monitor commands. Carries a **sync-&-fallback** preamble (global is canonical and overrides this copy where installed; this copy is the travel fallback when global is absent) and a **self-improvement** section (append verified fixes to its Troubleshooting section; takes effect next session). `allowed-tools` scoped to `Bash(cmux *)`, `Bash(cp *)`, `Bash(cmp *)`, `Bash(git worktree *)`, `Bash(ln *)`, `Read`, `Write`.
+- **`.claude/skills/` as a propagation surface** — documented in `docs/README.md` adoption tree and `docs/AGENTS.md` ("Optional project skills"). Opt-in/removable, like the `mobile-android` capability slot.
+- **Fingerprint `v5.18` row** (`upgrade-kit.md` Step 1) — anchored on the `## [v5.18]` `KIT_CHANGELOG.md` heading (rewrite- AND removal-invariant; file-presence was rejected because the skill is removable and would false-negate). This is the first new row to rely on the v5.17.2 guarantee that Step 5 keeps the project's changelog copy current.
+
+### Changed
+- **`docs/README.md`** adoption tree now lists `.claude/skills/cmux-orchestrator/` with a one-line note that the global copy overrides the in-repo one where present.
+- **`docs/AGENTS.md`** gains an "Optional project skills (`.claude/skills/`)" section documenting the skill, its global-overrides-project precedence, the travel-fallback role, and the ensure-present/never-clobber upgrade rule.
+
+### Files touched
+- `.claude/skills/cmux-orchestrator/SKILL.md` (new)
+- `docs/README.md` (adoption tree)
+- `docs/AGENTS.md` (optional-skills section)
+- `docs/prompts/upgrade-kit.md` (v5.18 fingerprint row)
+- `docs/KIT_VERSION` (5.17.2 → 5.18)
+- `docs/KIT_CHANGELOG.md` (this entry)
+
+### Migration
+`inline-edit`. Two project-facing actions:
+1. **Add the skill (ensure-present, never-clobber).** If `.claude/skills/cmux-orchestrator/SKILL.md` is **absent**, create it from the new kit: `mkdir -p .claude/skills/cmux-orchestrator && cp -n <new-kit>/.claude/skills/cmux-orchestrator/SKILL.md .claude/skills/cmux-orchestrator/SKILL.md`. If **present**, leave it untouched — a project's copy may have been refreshed from the user's newer global skill, so the kit snapshot must NOT overwrite it. If the project recorded the skill as intentionally removed in `docs/KIT_DEVIATIONS.md` (opt-out), do not re-seed it and do not surface it as missing (per the opt-in-capability rule).
+2. **Self-referential `upgrade-kit.md`** edit (the v5.18 fingerprint row) — use Step 4's special case: wholesale-refresh if content-vanilla, else add the one row.
+
+This is an **opt-in capability**: a project that doesn't use cmux orchestration can omit/remove the skill; the upgrade must not flag it as missing. The user-level global skill (`~/.claude/skills/cmux-orchestrator/`) is installed once per machine, outside the kit, and is the canonical self-updating copy — it is NOT part of this or any project's repo.
+
+### Edits
+- **`.claude/skills/cmux-orchestrator/SKILL.md`** — new file; `cp -n` from the new kit (never clobber an existing copy). See Migration step 1.
+- **`docs/README.md`** — in the adoption tree under `.claude/`, change `commands/` from a `└──` leaf to `├──` and append a `skills/` branch with `cmux-orchestrator/`.
+- **`docs/AGENTS.md`** — after the "Skills the kit invokes" section, add the "Optional project skills (`.claude/skills/`)" section.
+- **`docs/prompts/upgrade-kit.md` — self-referential; do NOT line-edit a vanilla copy.** If content-vanilla (diff against `archive/v5.17.2/docs/prompts/upgrade-kit.md`) with no real slot markers → **wholesale-replace**. Else add the `## [v5.18]` fingerprint row after the `v5.17.2` row.
+
+---
+
+## [v5.17.2] — 2026-06-07
+
+**Patch — close a latent self-undermining gap: the upgrade never refreshed the project's `KIT_CHANGELOG.md`, yet v5.16/v5.16.1 made the `## [vX.Y]` changelog heading the canonical fingerprint anchor.** Surfaced by a downstream v5.14→v5.17.1 upgrade retro (a Native-Android project) and confirmed against source. The fingerprint strategy bets on the project's changelog copy containing the heading it anchors on — Step 1 calls it "the only fully rewrite-invariant surface" and steers all new rows onto it — but **nothing in the upgrade kept that copy current.** Step 3 reads the changelog from the *new kit*; the inline-edit path treats every release's `KIT_CHANGELOG.md (this entry)` as maintainer-side and never propagates it; and the one safety net (Step 4 post-migration completeness reconciliation) runs **only** on the `migration-prompt-required` path — so a pure inline-edit jump leaves the project's changelog frozen at its adopt-version. Latent today (every changelog-anchored row is ≤ v5.12, present in any current copy), but the moment a future release follows the kit's own stated preference and anchors a new row on a near-target heading, Step 6 re-fingerprinting would throw a **real FAIL** on a clean upgrade. The retro's project was only saved because its jump happened to include migration prompts (the net fired, commit `f4eecb3`). **Fix is to the upgrade tooling only; no lifecycle/phase/sub-agent/downstream-behaviour change.**
+
+### Changed
+- **`upgrade-kit.md` Step 5 now refreshes `docs/KIT_CHANGELOG.md` wholesale from the new kit, on every path** (renamed heading: "Stamp the project with the new version *(and refresh the changelog copy)*"). The changelog is a pure kit reference — stack-invariant, slot-free, never hand-edited — so it is always safe to overwrite, exactly like `KIT_VERSION`. Step 5 always runs (including the trivial-noop-only and pure-inline-edit paths), which is why the refresh lives here rather than in a path-gated Step 4 branch. Handles the pre-v5.6 `docs/CHANGELOG.md` name for not-yet-renamed projects.
+- **`upgrade-kit.md` Step 4 post-migration completeness reconciliation** — added item 5 naming `KIT_CHANGELOG.md` as a special instance (always lands in the at-risk remainder via "this entry," but is refreshed wholesale in Step 5; never diff it region-by-region, never treat a stale copy as a `conflict`). Keeps the two propagation paths consistent.
+- **`upgrade-kit.md` Step 1 anchor-discipline preamble** — the `## [vX.Y]` changelog-heading preference (anchor option 1) now states explicitly that it is only sound *because* Step 5 keeps the project's copy current, with a "do not weaken it" note for the next maintainer who adds a changelog-anchored row.
+- **`MAINTAINING.md` rule 12** — same invariant recorded on the maintainer side: a changelog-heading fingerprint anchor depends on the Step 5 changelog refresh; the two must move together.
+
+### Added
+- **Fingerprint `v5.17.2` row** (`upgrade-kit.md` Step 1) — anchored on the new Step 5 heading string `refresh the changelog copy` (a tooling-file anchor; `upgrade-kit.md` is never rewritten).
+
+### Files touched
+- `docs/prompts/upgrade-kit.md` (Step 5 changelog refresh; Step 4 net item 5; Step 1 preamble note; v5.17.2 fingerprint row)
+- `MAINTAINING.md` (rule 12 — maintainer-only, not shipped)
+- `docs/KIT_VERSION` (5.17.1 → 5.17.2)
+- `docs/KIT_CHANGELOG.md` (this entry)
+
+### Migration
+`inline-edit`. The only project-facing file is `docs/prompts/upgrade-kit.md` — **self-referential**, so use Step 4's special case (wholesale-refresh if vanilla; canonical content-diff + no-real-markers check). No downstream behaviour change; the effect is that from this upgrade on, every project's `KIT_CHANGELOG.md` copy is kept current, so the kit's preferred changelog-heading fingerprint anchor actually resolves.
+
+### Edits
+- **`docs/prompts/upgrade-kit.md` — self-referential; do NOT line-edit a vanilla copy.** If content-vanilla (diff against `archive/v5.17.1/docs/prompts/upgrade-kit.md`, or the v5.17.1 ref) with no real slot markers → **wholesale-replace**, log `applied (wholesale-replace, vanilla)`. If hand-edited, apply four edits: (a) Step 5 heading → add "*(and refresh the changelog copy)*" and the wholesale-`cp` refresh paragraph after the `KIT_VERSION`-write sentence; (b) Step 4 post-migration completeness reconciliation → add item 5 for `KIT_CHANGELOG.md`; (c) Step 1 anchor-discipline preference option (1) → add the "only sound because Step 5 refreshes the copy" note; (d) add the `v5.17.2` fingerprint row after the `v5.17.1` row. Role: Step 5 is the load-bearing one — the project's changelog must be refreshed on every path.
+
+---
+
 ## [v5.17.1] — 2026-06-07
 
 **Patch — close a feedback gap v5.17 itself opened: make surfacing a found DEFECT mandatory, so "CLEAN is the success state" can't suppress a real bug.** Maintainer question right after v5.17 shipped: *"how do they surface the bugs that are found if they don't report back?"* v5.17 made the upgrade retro defect-gated to stop manufacturing churn — correct — but it also made the whole retro **optional** ("you MAY send… a courtesy, not a gate") and framed `CLEAN` as success. Right for killing enhancement padding; wrong for the **latent, non-blocking defect** — the upgrade completes, the agent notices a real kit bug it didn't trip on (the v5.10-anchor case: a project that rewrote `feature-lifecycle.md` upgraded *successfully*, yet the anchor was provably broken for the next project). An over-cautious reading of "CLEAN is the win, don't manufacture" could let that get absorbed into CLEAN instead of surfaced. This is a defect in v5.17's mechanism, not an enhancement. No lifecycle change.
