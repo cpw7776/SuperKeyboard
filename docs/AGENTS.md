@@ -91,6 +91,14 @@ If a skill isn't installed, the kit still runs but with reduced rigor. Don't sub
 
 ---
 
+## Optional project skills (`.claude/skills/`) — opt-in capabilities (v5.18+)
+
+Distinct from the slash-commands above (which the lifecycle invokes), the kit can also ship **self-contained project skills** under `.claude/skills/`. These are opt-in capabilities a project carries in-repo; remove the directory if the project doesn't use the capability.
+
+- **`cmux-orchestrator`** — runs several epics/tasks in parallel as separate Claude Code sessions tiled in one cmux workspace (balanced panes, named tabs, per-session launch + monitoring). **Canonical copy is the user-level skill at `~/.claude/skills/cmux-orchestrator/`, which overrides the project copy wherever it's installed** (Claude Code precedence is personal > project). The in-repo copy is a **travel fallback** for machines that lack the global skill; the global skill refreshes it on each run, and it self-improves (appends verified fixes to its own Troubleshooting section, taking effect next session). On upgrade it is **ensure-present, never-clobber** — the upgrade never overwrites an existing (possibly globally-freshened) project copy with an older kit snapshot, and a project that deliberately removed it (recorded in `KIT_DEVIATIONS.md`) is not re-seeded.
+
+---
+
 ## Customization conventions (v5.4+)
 
 The kit ships universal templates. Projects customize specific slots — test commands, debug-grep patterns, project intros, surface paths.

@@ -52,8 +52,10 @@ your-project/
 │   │   ├── code-quality-agent.md
 │   │   ├── context-docs-agent.md
 │   │   └── docs-auditor-agent.md
-│   └── commands/             ← Project-level slash commands (use as-is — no customization)
-│       └── reconcile.md      ← /reconcile → runs docs/prompts/reconcile-change.md
+│   ├── commands/             ← Project-level slash commands (use as-is — no customization)
+│   │   └── reconcile.md      ← /reconcile → runs docs/prompts/reconcile-change.md
+│   └── skills/               ← Optional project skills (use as-is — no customization)
+│       └── cmux-orchestrator/ ← in-repo fallback copy of the global cmux-orchestrator skill (travels to machines that lack ~/.claude/skills/; the global copy overrides it where present)
 ├── docs/
 │   ├── context/              ← Build these out for YOUR project (includes Unit_Test_Writing_Guide.md — universal anti-patterns + project lessons appended by retros)
 │   ├── prompts/              ← Ready to use (universal — 3 deliberation stops + Phase 0 mode pick)
