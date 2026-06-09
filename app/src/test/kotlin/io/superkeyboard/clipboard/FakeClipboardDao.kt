@@ -20,16 +20,18 @@ class FakeClipboardDao : ClipboardDao {
     /** Read-only snapshot for test assertions. */
     val entries: List<ClipboardEntry> get() = store.value
 
-    private fun sortedLimited(list: List<ClipboardEntry>): List<ClipboardEntry> =
+    // isPinned DESC, then timestamp DESC — mirrors both production @Query ORDER BY clauses.
+    private fun sorted(list: List<ClipboardEntry>): List<ClipboardEntry> =
         list.sortedWith(
             compareByDescending<ClipboardEntry> { it.isPinned }.thenByDescending { it.timestamp }
-        ).take(20)
+        )
 
+    // getAllEntries has `LIMIT 20` in production; searchEntries has NO limit — mirror each faithfully.
     override fun getAllEntries(): Flow<List<ClipboardEntry>> =
-        store.map { sortedLimited(it) }
+        store.map { sorted(it).take(20) }
 
     override fun searchEntries(query: String): Flow<List<ClipboardEntry>> =
-        store.map { list -> sortedLimited(list.filter { it.text.contains(query) }) }
+        store.map { list -> sorted(list.filter { it.text.contains(query) }) }
 
     override suspend fun insert(entry: ClipboardEntry) {
         store.value = if (entry.id == 0L) {
