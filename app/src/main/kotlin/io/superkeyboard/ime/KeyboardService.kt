@@ -8,12 +8,27 @@ import android.view.inputmethod.EditorInfo
 import android.widget.LinearLayout
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import io.superkeyboard.R
 import io.superkeyboard.SuperKeyboardApp
+import io.superkeyboard.ai.AiAction
+import io.superkeyboard.ai.AiConfig
+import io.superkeyboard.ai.AiEngine
+import io.superkeyboard.ai.AiKeyStore
+import io.superkeyboard.ai.AiPresets
+import io.superkeyboard.ai.EngineResult
+import io.superkeyboard.ai.OkHttpAiChatClient
 import io.superkeyboard.clipboard.ClipboardBottomSheet
 import io.superkeyboard.clipboard.ClipboardManagerService
 import io.superkeyboard.clipboard.ClipboardRepository
+import io.superkeyboard.settings.SettingsRepository
 import io.superkeyboard.toolbar.AIToolbarView
 import io.superkeyboard.util.HapticHelper
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
 class KeyboardService : InputMethodService(), KeyboardView.KeyboardActionListener {
 
@@ -27,6 +42,17 @@ class KeyboardService : InputMethodService(), KeyboardView.KeyboardActionListene
     private lateinit var clipboardManagerService: ClipboardManagerService
     private var clipboardSheet: ClipboardBottomSheet? = null
 
+    // AI Action Engine (E2). The engine is pure; the OkHttp client is the only network seam and is
+    // built lazily, so when AI is disabled the engine short-circuits and no socket is opened.
+    private lateinit var settingsRepository: SettingsRepository
+    private lateinit var aiKeyStore: AiKeyStore
+    private val aiEngine = AiEngine(OkHttpAiChatClient())
+    private val aiScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    private var aiPreview: AiPreviewView? = null
+
+    /** Whether the current input field is a password/secure field — AI actions are blocked there (D4). */
+    private var isPasswordField = false
+
     override fun onCreate() {
         super.onCreate()
         HapticHelper.init(this)
@@ -35,12 +61,17 @@ class KeyboardService : InputMethodService(), KeyboardView.KeyboardActionListene
         clipboardRepository = ClipboardRepository(app.clipboardDatabase.clipboardDao())
         clipboardManagerService = ClipboardManagerService(this, clipboardRepository)
         clipboardManagerService.startListening()
+
+        settingsRepository = SettingsRepository(this)
+        aiKeyStore = AiKeyStore(this)
     }
 
     override fun onDestroy() {
         super.onDestroy()
         clipboardManagerService.stopListening()
         clipboardSheet?.destroy()
+        aiPreview?.destroy()
+        aiScope.cancel()
     }
 
     override fun onCreateInputView(): View {
@@ -53,6 +84,7 @@ class KeyboardService : InputMethodService(), KeyboardView.KeyboardActionListene
 
         toolbarView = AIToolbarView(this).apply {
             onClipboardClick = { showClipboardManager() }
+            onAiAction = { action -> handleAiAction(action) }
         }
 
         keyboardView = KeyboardView(this).apply {
@@ -98,17 +130,37 @@ class KeyboardService : InputMethodService(), KeyboardView.KeyboardActionListene
 
     override fun onStartInput(info: EditorInfo?, restarting: Boolean) {
         super.onStartInput(info, restarting)
+        isPasswordField = isPasswordInputType(info?.inputType ?: 0)
         applyAutoCapitalize(info)
     }
 
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
+        isPasswordField = isPasswordInputType(info?.inputType ?: 0)
+        // Grey out the 5 AI buttons on password/secure fields (D4 — visible signal + UX).
+        if (::toolbarView.isInitialized) toolbarView.setAiActionsEnabled(!isPasswordField)
         keyboardState.switchToAlpha()
         keyboardState.setEmojiMode(false)
         applyAutoCapitalize(info)
         keyboardView.keyboardState = keyboardState
         keyboardView.refreshTheme()
         showKeyboard()
+    }
+
+    /**
+     * True for password/secure variations across text and number classes (D4). AI actions are
+     * disabled on these fields and the engine never receives their contents.
+     */
+    private fun isPasswordInputType(inputType: Int): Boolean {
+        val cls = inputType and InputType.TYPE_MASK_CLASS
+        val variation = inputType and InputType.TYPE_MASK_VARIATION
+        return when (cls) {
+            InputType.TYPE_CLASS_TEXT -> variation == InputType.TYPE_TEXT_VARIATION_PASSWORD ||
+                variation == InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD ||
+                variation == InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD
+            InputType.TYPE_CLASS_NUMBER -> variation == InputType.TYPE_NUMBER_VARIATION_PASSWORD
+            else -> false
+        }
     }
 
     private fun applyAutoCapitalize(info: EditorInfo?) {
@@ -230,5 +282,118 @@ class KeyboardService : InputMethodService(), KeyboardView.KeyboardActionListene
         rootLayout.removeAllViews()
         rootLayout.addView(toolbarView)
         rootLayout.addView(clipboardSheet)
+    }
+
+    // --- AI Action Engine wiring (E2 / D3) ---------------------------------
+
+    /**
+     * Handle a tap on one of the 5 AI toolbar buttons. Reads the target text (selection else whole
+     * field), shows the preview in its loading state, then runs the engine off the [aiScope] and
+     * renders the result. The engine's privacy gate (disabled/unconfigured) means no network work
+     * happens unless the user has explicitly enabled and configured AI.
+     */
+    private fun handleAiAction(action: AiAction) {
+        // (D4 safety net) Never read/send secure field contents, even if the button slipped through.
+        if (isPasswordField) return
+        val ic = currentInputConnection ?: return
+
+        // Resolve the target text via the pure helper: selection if present, else the whole field.
+        val selected = ic.getSelectedText(0)
+        val before = ic.getTextBeforeCursor(MAX_FIELD_CHARS, 0) ?: ""
+        val after = ic.getTextAfterCursor(MAX_FIELD_CHARS, 0) ?: ""
+        val target = resolveTarget(selected, "$before$after")
+
+        showAiPreviewLoading()
+
+        aiScope.launch {
+            val config = AiConfig(
+                enabled = settingsRepository.aiEnabled.first(),
+                endpointUrl = settingsRepository.aiEndpointUrl.first(),
+                apiKey = aiKeyStore.getKey() ?: "",
+                model = settingsRepository.aiModel.first(),
+                targetLanguage = settingsRepository.aiTargetLang.first()
+            )
+
+            // PRESET: DEVIATION — for v1 simplicity we use the FIRST saved preset (no in-IME chooser).
+            // If no presets exist, surface a "create a preset in Settings" message and do not call out.
+            val presetPrompt: String? = if (action == AiAction.PRESET) {
+                val presets = AiPresets.decode(settingsRepository.aiPresetsJson.first())
+                if (presets.isEmpty()) {
+                    aiPreview?.showMessage(getString(R.string.ai_msg_no_preset))
+                    return@launch
+                }
+                presets.first().prompt
+            } else {
+                null
+            }
+
+            val result = aiEngine.run(action, target.text, config, presetPrompt)
+            renderAiResult(result, target.hadSelection)
+        }
+    }
+
+    private fun renderAiResult(result: EngineResult, hadSelection: Boolean) {
+        // Remember whether Apply should replace the selection or the whole field.
+        applyHadSelection = hadSelection
+        when (result) {
+            is EngineResult.Result -> aiPreview?.showResult(result.text)
+            EngineResult.Disabled -> aiPreview?.showMessage(getString(R.string.ai_msg_disabled))
+            EngineResult.Unconfigured -> aiPreview?.showMessage(getString(R.string.ai_msg_unconfigured))
+            EngineResult.TooLong -> aiPreview?.showMessage(getString(R.string.ai_msg_too_long))
+            is EngineResult.Error -> aiPreview?.showMessage(
+                result.message.ifBlank { getString(R.string.ai_msg_error_generic) }
+            )
+        }
+    }
+
+    /** Whether the most recent AI request targeted a selection (vs. the whole field) — used on Apply. */
+    private var applyHadSelection = false
+
+    private fun showAiPreviewLoading() {
+        aiPreview?.destroy()
+        val theme = KeyboardTheme(this)
+        aiPreview = AiPreviewView(
+            context = this,
+            theme = theme,
+            onApply = { text -> applyAiResult(text) },
+            onClose = { dismissAiPreview() }
+        )
+        rootLayout.removeAllViews()
+        rootLayout.addView(toolbarView)
+        rootLayout.addView(aiPreview)
+    }
+
+    /**
+     * Apply the AI result to the field. If the request targeted a selection, [commitText] replaces it.
+     * Otherwise we replace the whole field: select-all then commit, wrapped in a batch edit so it is
+     * a single, atomic edit the host app sees.
+     */
+    private fun applyAiResult(text: String) {
+        val ic = currentInputConnection
+        if (ic != null) {
+            if (applyHadSelection) {
+                // A selection is active — commitText replaces exactly the selected range.
+                ic.commitText(text, 1)
+            } else {
+                // No selection — replace the entire field atomically.
+                ic.beginBatchEdit()
+                ic.performContextMenuAction(android.R.id.selectAll)
+                ic.commitText(text, 1)
+                ic.endBatchEdit()
+            }
+        }
+        dismissAiPreview()
+    }
+
+    private fun dismissAiPreview() {
+        aiPreview?.destroy()
+        aiPreview = null
+        showKeyboard()
+    }
+
+    private companion object {
+        // Upper bound on how much surrounding text we pull when there is no selection. Matches the
+        // engine's input cap so over-long fields are caught as TooLong rather than silently truncated.
+        const val MAX_FIELD_CHARS = 100_000
     }
 }
