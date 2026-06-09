@@ -52,6 +52,7 @@ Bump **both** `versionCode` (monotonic int) and `versionName` in `app/build.grad
 | 0.1.3 | 4 | `SuperKeyboard-v0.1.3-bigger-keys-clear-gesture-bar.apk` | Taller keys + bottom inset padding so the bottom row clears the gesture/nav bar. In-place update. |
 | 0.2.0 | 5 | `SuperKeyboard-v0.2.0-ai-action-engine.apk` | E2 — AI action engine (5 toolbar actions wired to a user-configured OpenAI-compatible endpoint; default-OFF; preview-then-apply; Keystore-encrypted key). First INTERNET permission. In-place update (same signature). |
 | 0.2.1 | 6 | `SuperKeyboard-v0.2.1-ai-test-connection.apk` | E2 Phase-4 fix — AI errors now surface HTTP status + body snippet (diagnosable); added a "Test connection" button to AI settings. In-place update. |
+| 0.2.2 | 7 | `SuperKeyboard-v0.2.2-ai-network-io-fix.apk` | E2 Phase-4 fix — run the AI network call on Dispatchers.IO (was on the main thread → NetworkOnMainThreadException: swallowed as "Unexpected response" in 0.2.0, then crashed Test Connection in 0.2.1). Now main-safe + defensive catch. In-place update. |
 
 ## Size note
 
