@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -83,6 +84,10 @@ dependencies {
 
     // DataStore
     implementation(libs.androidx.datastore.preferences)
+
+    // AI Action Engine epic (E2) — networking + JSON
+    implementation(libs.okhttp)
+    implementation(libs.kotlinx.serialization.json)
 
     // Test stack (test-foundation epic) — test scope only; the shipped APK is unchanged.
     testImplementation(libs.junit)

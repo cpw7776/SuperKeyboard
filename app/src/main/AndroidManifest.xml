@@ -2,6 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- AI Action Engine (E2): opt-in, default-OFF egress to the user's own
+         OpenAI-compatible endpoint only. See docs/ard/ADR_AI_Action_Engine.md. -->
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <application
         android:name=".SuperKeyboardApp"
