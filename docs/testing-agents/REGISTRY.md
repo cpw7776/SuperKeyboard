@@ -34,6 +34,7 @@
 | Agent File | Scope / Purpose | Routes Covered | Roles / Tiers | Viewports | Async | Last Updated | Last Miss |
 |-----------|-----------------|----------------|---------------|-----------|-------|--------------|-----------|
 | `test-foundation-tests.md` | Verify the JVM + instrumented suites run green and the app build isn't regressed | Gradle `:app:testDebugUnitTest`, `connectedDebugAndroidTest`, `assembleDebug` | none (offline) | AVD Medium_Phone_API_36.1 | n | 2026-06-09 | — |
+| `ai-action-engine-tests.md` | Verify the AI toolbar actions, default-OFF egress guarantee, encrypted key, and preview-then-apply behavior | Gradle `:app:testDebugUnitTest`, `assembleDebug` + on-device AI settings/actions | none (user supplies endpoint+key fixture) | physical phone (APK→Syncthing) | **y** (network) | 2026-06-09 | — |
 
 **Column definitions:**
 

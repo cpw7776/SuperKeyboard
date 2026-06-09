@@ -184,3 +184,12 @@ Also update:
 | `docs/architecture/Feature_Architecture_Test_Foundation.md` | Invocation→assertion flow |
 | `docs/plans/2026-06-09-test-foundation.md` | Plan snapshot + Phase 5 learning log |
 | `docs/testing-agents/test-foundation-tests.md` | Native test plan (Gradle suites + on-device sanity) |
+
+### Feature docs — `E2-ai-action-engine`
+| File | Purpose |
+|------|---------|
+| `docs/prd/PRD_AI_Action_Engine.md` | PRD — AI engine task checklist (Batches A–E) |
+| `docs/ard/ADR_AI_Action_Engine.md` | ADR — network egress + privacy reconciliation, decisions D1–D7 |
+| `docs/architecture/Feature_Architecture_AI_Action_Engine.md` | Button→endpoint outbound flow + security |
+| `docs/plans/2026-06-09-ai-action-engine.md` | Plan snapshot + Phase 5 learning log |
+| `docs/testing-agents/ai-action-engine-tests.md` | Native test plan (engine/egress/crypto + on-device actions) |
