@@ -62,8 +62,47 @@ class AiEngine(
         }
     }
 
+    /**
+     * Test the user's [config] against their endpoint with a minimal request ("Test connection" in
+     * AI Settings). Runs the SAME privacy gates as [run] in the same order (ADR D3):
+     *  1. `!enabled`               -> [EngineResult.Disabled]      (client NEVER touched — invariant 1)
+     *  2. endpoint/key/model blank -> [EngineResult.Unconfigured]  (invariant 2: no hard-coded cloud)
+     *  3. else send a tiny system+user pair and map [AiResult] -> [EngineResult] exactly like [run].
+     *
+     * Because the probe is gated on `enabled` first, "AI off ⇒ no egress" still holds: testing the
+     * connection requires AI to be ON. There is no path here that calls the network when disabled.
+     */
+    suspend fun probe(config: AiConfig): EngineResult {
+        // (1) Egress guard — return immediately, do not touch the client (ADR D3, invariant 1).
+        if (!config.enabled) return EngineResult.Disabled
+
+        // (2) Unconfigured: user-owned endpoint only (invariant 2).
+        if (config.endpointUrl.isBlank() || config.apiKey.isBlank() || config.model.isBlank()) {
+            return EngineResult.Unconfigured
+        }
+
+        // (3) Minimal probe payload — no user field contents are involved.
+        val messages = listOf(
+            ChatMessage(role = "system", content = PROBE_SYSTEM_PROMPT),
+            ChatMessage(role = "user", content = PROBE_USER_MESSAGE)
+        )
+
+        return when (val result = client.complete(
+            endpointUrl = config.endpointUrl,
+            apiKey = config.apiKey,
+            model = config.model,
+            messages = messages
+        )) {
+            is AiResult.Success -> EngineResult.Result(result.text)
+            is AiResult.HttpError -> EngineResult.Error("HTTP ${result.code}: ${result.message}")
+            is AiResult.NetworkError -> EngineResult.Error(result.message)
+        }
+    }
+
     private companion object {
         const val DEFAULT_MAX_INPUT_CHARS = 8000
+        const val PROBE_SYSTEM_PROMPT = "You are a connection test. Reply with the single word: OK"
+        const val PROBE_USER_MESSAGE = "ping"
     }
 }
 

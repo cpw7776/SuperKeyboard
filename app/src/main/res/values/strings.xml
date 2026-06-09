@@ -35,6 +35,11 @@
     <string name="settings_ai_api_key_set">A key is saved</string>
     <string name="settings_ai_api_key_save">Save Key</string>
     <string name="settings_ai_api_key_clear">Clear Key</string>
+    <string name="settings_ai_test_connection">Test connection</string>
+    <string name="settings_ai_test_testing">Testing…</string>
+    <string name="settings_ai_test_connected">✓ Connected</string>
+    <string name="settings_ai_test_disabled">Turn on AI to test</string>
+    <string name="settings_ai_test_unconfigured">Enter endpoint, model, and key first</string>
     <string name="settings_ai_presets">Presets</string>
     <string name="settings_ai_presets_empty">No presets yet</string>
     <string name="settings_ai_preset_name_label">Name</string>

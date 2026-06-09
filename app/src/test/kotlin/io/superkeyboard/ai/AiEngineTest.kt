@@ -218,4 +218,80 @@ class AiEngineTest {
         assertThat(result).isInstanceOf(EngineResult.Error::class.java)
         assertThat((result as EngineResult.Error).message).isNotEmpty()
     }
+
+    // ---- Test-connection probe (Phase 4 addition) ----
+
+    @Test
+    fun `probe with AI disabled returns Disabled and never touches the client`() = runTest {
+        // Headline privacy assertion for the new probe path: the egress guard (ADR D3, invariant 1)
+        // must hold for probe exactly as it does for run — AI off ⇒ no network work at all.
+        val fake = FakeAiChatClient()
+        val engine = AiEngine(fake)
+
+        val result = engine.probe(validConfig.copy(enabled = false))
+
+        assertThat(result).isInstanceOf(EngineResult.Disabled::class.java)
+        assertThat(fake.callCount).isEqualTo(0)
+    }
+
+    @Test
+    fun `probe with blank endpoint returns Unconfigured without touching the client`() = runTest {
+        val fake = FakeAiChatClient()
+        val engine = AiEngine(fake)
+
+        val result = engine.probe(validConfig.copy(endpointUrl = ""))
+
+        assertThat(result).isInstanceOf(EngineResult.Unconfigured::class.java)
+        assertThat(fake.callCount).isEqualTo(0)
+    }
+
+    @Test
+    fun `probe with blank key returns Unconfigured without touching the client`() = runTest {
+        val fake = FakeAiChatClient()
+        val engine = AiEngine(fake)
+
+        val result = engine.probe(validConfig.copy(apiKey = "  "))
+
+        assertThat(result).isInstanceOf(EngineResult.Unconfigured::class.java)
+        assertThat(fake.callCount).isEqualTo(0)
+    }
+
+    @Test
+    fun `probe with blank model returns Unconfigured without touching the client`() = runTest {
+        val fake = FakeAiChatClient()
+        val engine = AiEngine(fake)
+
+        val result = engine.probe(validConfig.copy(model = ""))
+
+        assertThat(result).isInstanceOf(EngineResult.Unconfigured::class.java)
+        assertThat(fake.callCount).isEqualTo(0)
+    }
+
+    @Test
+    fun `probe configured sends a minimal request and maps Success to Result`() = runTest {
+        val fake = FakeAiChatClient(result = AiResult.Success("OK"))
+        val engine = AiEngine(fake)
+
+        val result = engine.probe(validConfig)
+
+        assertThat(result).isInstanceOf(EngineResult.Result::class.java)
+        assertThat(fake.callCount).isEqualTo(1)
+        assertThat(fake.lastModel).isEqualTo("test-model")
+        // Minimal probe payload: a system instruction plus a user "ping".
+        val messages = fake.lastMessages!!
+        assertThat(messages).hasSize(2)
+        assertThat(messages[0].role).isEqualTo("system")
+        assertThat(messages[1].role).isEqualTo("user")
+    }
+
+    @Test
+    fun `probe maps HttpError to a diagnosable Error`() = runTest {
+        val fake = FakeAiChatClient(result = AiResult.HttpError(code = 401, message = "Invalid API key"))
+        val engine = AiEngine(fake)
+
+        val result = engine.probe(validConfig)
+
+        assertThat(result).isInstanceOf(EngineResult.Error::class.java)
+        assertThat((result as EngineResult.Error).message).contains("401")
+    }
 }

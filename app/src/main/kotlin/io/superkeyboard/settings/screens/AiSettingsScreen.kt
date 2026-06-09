@@ -33,6 +33,8 @@ fun AiSettingsScreen(
     val targetLang by viewModel.aiTargetLang.collectAsState()
     val hasApiKey by viewModel.hasApiKey.collectAsState()
     val presets by viewModel.aiPresets.collectAsState()
+    val testStatus by viewModel.testConnectionStatus.collectAsState()
+    val testInFlight by viewModel.testConnectionInFlight.collectAsState()
 
     // Local, write-only buffer for the key field — never seeded from the stored key (ADR D2).
     var apiKeyDraft by remember { mutableStateOf("") }
@@ -159,6 +161,25 @@ fun AiSettingsScreen(
                 ) {
                     Text(stringResource(R.string.settings_ai_api_key_clear))
                 }
+            }
+
+            // Test connection — probes the configured endpoint with a minimal request so the user can
+            // verify setup. Errors are diagnosable (HTTP code + body snippet). Requires AI to be ON.
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedButton(
+                onClick = { viewModel.testConnection() },
+                enabled = !testInFlight,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(stringResource(R.string.settings_ai_test_connection))
+            }
+            testStatus?.let { status ->
+                Text(
+                    status,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
             }
 
             Spacer(modifier = Modifier.height(20.dp))

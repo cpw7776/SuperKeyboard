@@ -66,26 +66,17 @@ class OkHttpAiChatClient : AiChatClient {
 
         return try {
             client.newCall(request).execute().use { response ->
-                val body = response.body?.string().orEmpty()
-                if (!response.isSuccessful) {
-                    // Do NOT include the request (it carries field contents); a bounded body snippet
-                    // from the server's own error response is safe and useful for the user.
-                    return@use AiResult.HttpError(response.code, body.take(ERROR_SNIPPET_CHARS))
-                }
-                val parsed = json.decodeFromString(ChatResponse.serializer(), body)
-                val text = parsed.choices.firstOrNull()?.message?.content
-                if (text.isNullOrBlank()) {
-                    AiResult.HttpError(response.code, "Empty response from endpoint")
-                } else {
-                    AiResult.Success(text)
-                }
+                // All response→AiResult mapping lives in the pure ResponseMapper so the diagnosability
+                // paths (HTTP code + bounded body snippet) are JVM-unit-testable without a live server.
+                ResponseMapper.mapHttpResponse(
+                    isSuccessful = response.isSuccessful,
+                    code = response.code,
+                    body = response.body?.string().orEmpty()
+                )
             }
         } catch (e: IOException) {
             // Timeouts and connection failures (no network, DNS, TLS). Message only — never the body.
             AiResult.NetworkError(e.message ?: "Network error")
-        } catch (e: Exception) {
-            // Malformed/unexpected response body that failed to parse. Surface, don't swallow (I1).
-            AiResult.NetworkError("Unexpected response from endpoint")
         }
     }
 
@@ -111,6 +102,5 @@ class OkHttpAiChatClient : AiChatClient {
         const val TIMEOUT_SECONDS = 30L
         const val JSON_MEDIA_TYPE = "application/json"
         const val CHAT_COMPLETIONS_PATH = "/chat/completions"
-        const val ERROR_SNIPPET_CHARS = 300
     }
 }
