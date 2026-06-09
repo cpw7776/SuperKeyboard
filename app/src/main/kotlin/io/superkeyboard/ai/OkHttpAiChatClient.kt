@@ -1,5 +1,7 @@
 package io.superkeyboard.ai
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -64,19 +66,32 @@ class OkHttpAiChatClient : AiChatClient {
             .post(requestJson.toRequestBody(JSON_MEDIA_TYPE.toMediaType()))
             .build()
 
-        return try {
-            client.newCall(request).execute().use { response ->
-                // All response→AiResult mapping lives in the pure ResponseMapper so the diagnosability
-                // paths (HTTP code + bounded body snippet) are JVM-unit-testable without a live server.
-                ResponseMapper.mapHttpResponse(
-                    isSuccessful = response.isSuccessful,
-                    code = response.code,
-                    body = response.body?.string().orEmpty()
-                )
+        // The OkHttp call is BLOCKING; run it off the main thread inside the client so EVERY caller is
+        // main-safe (IME preview on aiScope=Main, settings Test Connection on viewModelScope=Main).
+        // Without this, execute() on Main throws NetworkOnMainThreadException — which was first swallowed
+        // by a generic catch and later left uncaught (it is a RuntimeException, not IOException) and
+        // crashed the Settings app. complete() is suspend, so it resumes on the caller's dispatcher
+        // (Main) and UI updates stay safe.
+        return withContext(Dispatchers.IO) {
+            try {
+                client.newCall(request).execute().use { response ->
+                    // All response→AiResult mapping lives in the pure ResponseMapper so the diagnosability
+                    // paths (HTTP code + bounded body snippet) are JVM-unit-testable without a live server.
+                    ResponseMapper.mapHttpResponse(
+                        isSuccessful = response.isSuccessful,
+                        code = response.code,
+                        body = response.body?.string().orEmpty()
+                    )
+                }
+            } catch (e: IOException) {
+                // Timeouts and connection failures (no network, DNS, TLS). Message only — never the body.
+                AiResult.NetworkError(e.message ?: "Network error")
+            } catch (e: Exception) {
+                // Defense-in-depth (I1): any unexpected throwable becomes a visible error message instead
+                // of crashing the app / silently mislabeling. Message/class name only — never the request
+                // body or API key.
+                AiResult.NetworkError("Request failed: ${e.message ?: e.javaClass.simpleName}")
             }
-        } catch (e: IOException) {
-            // Timeouts and connection failures (no network, DNS, TLS). Message only — never the body.
-            AiResult.NetworkError(e.message ?: "Network error")
         }
     }
 
