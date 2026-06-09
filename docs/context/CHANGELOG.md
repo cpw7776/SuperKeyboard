@@ -10,6 +10,17 @@ All notable changes to SuperKeyboard will be documented in this file.
 
 > Add entries here as features and fixes are completed. Move to a versioned section on release.
 
+### Feature: Test Suite Foundation (`test-foundation`) — 2026-06-09
+
+Stood up the **first test source sets** in the repo, closing P0 #5 (`PRODUCTION_READY.md`) and activating the kit's 5th post-feature gate (Test-Suite Summary) for all future epics. Two suites, both green, **zero production-code change** (all new deps are test-scope only — the shipped APK is byte-for-byte unchanged):
+- **JVM unit suite** (`app/src/test/`, `:app:testDebugUnitTest`) — `KeyboardStateTest` (15 tests: shift cycle, auto-shift, symbols pages, emoji) + `ClipboardRepositoryTest` (9 tests: dedup, expiry math, pin, clear/cleanup) over a hand-written in-memory `FakeClipboardDao`. 24 tests, 0 failures/skips.
+- **Instrumented suite** (`app/src/androidTest/`, `connectedDebugAndroidTest` on AVD `Medium_Phone_API_36.1`) — `ClipboardDatabaseEncryptionTest` (3 tests): **encryption-at-rest** (sentinel absent from raw `clipboard.db*` bytes — the privacy-promise regression guard), encrypted round-trip, and wrong-key rejection. 3 tests, 0 failures/skips.
+
+Test stack: JUnit4 · `kotlinx-coroutines-test` 1.7.3 (pinned to room-ktx's coroutines-core) · Truth · `androidx.test`. Turbine deliberately deferred (repo Flow methods are pass-throughs). Decisions recorded in `docs/ard/ADR_Test_Foundation.md` (D1–D7). Discipline baselines (`docs/known-test-failures.md`, `docs/known-test-skips.md`) flipped from "no suite" to a real green baseline (0 skips).
+
+**Files:** `gradle/libs.versions.toml`, `app/build.gradle.kts` (+`testInstrumentationRunner`, test-scope deps); new test files under `app/src/test/` + `app/src/androidTest/`; docs (PRD/ADR/architecture/plan/test-plan, Context Index, KIT_DEVIATIONS gate-count note).
+**DB changes:** None (tests read the existing schema; no migration). **Component-surface changes:** None. **Privacy changes:** None — the instrumented suite *verifies* encryption-at-rest and does not weaken it; no logging of decrypted text / passphrase / Keystore material; no network; `allowBackup` untouched.
+
 ### Fix: taller keys + clear the gesture/nav bar — 2026-06-09
 
 On-device follow-up after v0.1.2: the keyboard rendered and typed correctly, but the bottom row sat against the gesture-navigation bar and the keys were a touch short. Increased proportional key height (`width/10 * 1.1 → * 1.34`) and added bottom padding to the IME root layout sized to the live navigation-bar + system-gesture insets (with a 16dp floor for the common IME zero-inset case), painting the padded area the keyboard background colour. Version `0.1.2→0.1.3` (`versionCode 3→4`).

@@ -2,7 +2,7 @@
 
 > **Goal:** Ship a privacy-first Android keyboard to the Play Store. Target date: TBD (early development).
 > This document consolidates all required work before a Play Store (or sideload-beta) release.
-> **Last Updated:** 2026-06-07
+> **Last Updated:** 2026-06-09
 
 ---
 
@@ -14,7 +14,7 @@
 | 2 | Encrypted clipboard correct: pin/expiry/clear semantics, no plaintext leakage | — | P0 | Shipped (Phase 1), needs test coverage |
 | 3 | Real Room migrations (remove `fallbackToDestructiveMigration`) | — | P0 | Not started |
 | 4 | Release signing config + ProGuard/R8 rules validated | — | P0 | Not started (debug-sideload signing now wired — see below) |
-| 5 | Automated test coverage (unit + instrumented) for clipboard, settings, key logic | — | P0 | Not started — no test source set exists |
+| 5 | Automated test coverage (unit + instrumented) for clipboard, settings, key logic | `test-foundation` | P0 | **Done (2026-06-09)** — JVM suite (24 tests) + instrumented SQLCipher suite (3 tests); 0 failures, 0 skips |
 | 6 | Privacy audit: confirm no network egress, no plaintext logging of sensitive data | — | P0 | Not started |
 | 7 | AI toolbar actions wired to on-device / user-endpoint engines | — | P1 | Scaffolded only |
 | 8 | Accessibility pass (TalkBack, key labels, contrast) | — | P1 | Not started |
@@ -33,11 +33,11 @@
 - **What's needed:** Replace with explicit `Migration` objects before any schema change ships.
 - **Status:** Open.
 
-### Automated tests
-- **What:** No `app/src/test/` or `app/src/androidTest/` source set exists.
-- **Why:** The kit's lifecycle is TDD-driven; clipboard encryption and key/pin/expiry logic are high-risk and untested.
-- **What's needed:** Stand up JVM unit tests (Robolectric or pure-Kotlin where possible) and instrumented tests for the SQLCipher path and IME behavior.
-- **Status:** Open (tracked in `docs/KIT_DEVIATIONS.md`).
+### Automated tests — **CLOSED** (2026-06-09, `test-foundation` epic)
+- **What was needed:** `app/src/test/` (JVM unit) + `app/src/androidTest/` (instrumented) source sets.
+- **What shipped:** Both source sets now exist. JVM suite — `KeyboardStateTest` (15 tests) + `ClipboardRepositoryTest` (9 tests) over `FakeClipboardDao`; 24 tests, 0 failures, 0 skips. Instrumented suite — `ClipboardDatabaseEncryptionTest` (3 tests): encryption-at-rest privacy-promise guard, encrypted round-trip, wrong-key rejection; 0 failures, 0 skips.
+- **Status:** Closed. Test-scope deps wired in `gradle/libs.versions.toml` + `app/build.gradle.kts`. No production-code change; shipped APK is unchanged. Discipline baselines in `docs/known-test-failures.md` / `docs/known-test-skips.md` flipped to real green baseline.
+- **Remaining gap:** Coverage is a foundation; broader coverage of settings, gesture, and more repository paths is future work but the source sets and patterns now exist.
 
 ### Release signing + ProGuard
 - **What:** Release build enables minify/shrink but signing config and verified ProGuard rules are not set up.

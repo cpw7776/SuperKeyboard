@@ -32,7 +32,7 @@
 | Settings storage | Jetpack DataStore (Preferences) | 1.1.1 |
 | Annotation processing | KSP (for Room) | 2.0.21-1.0.28 |
 | Lists | RecyclerView (clipboard bottom sheet) | 1.3.2 |
-| Testing | None yet — JVM unit tests (`app/src/test/`) and instrumented tests (`app/src/androidTest/`) are not present; see KIT_DEVIATIONS.md | — |
+| Testing | JUnit4 · `kotlinx-coroutines-test` 1.7.3 · Truth 1.4.4 · `androidx.test` (core/ext-junit/runner) | JUnit 4.13.2; coroutines-test pinned to room-ktx's resolved version |
 
 **JVM target:** 17 (source & target compatibility). **Java to build:** JDK 17+ (Gradle 8.11.1 supports JDK 17–21).
 
@@ -149,7 +149,7 @@ app/src/main/
 | 2 | Encrypted clipboard history (SQLCipher + Keystore) | Shipped (Phase 1) |
 | 3 | Settings app (Appearance / Clipboard / About) | Shipped (Phase 1) |
 | 4 | AI toolbar actions (translate, rewrite, summarize, dictation, TTS, presets) | Scaffolded UI; engines not wired |
-| 5 | Tests (unit + instrumented) | Not started |
+| 5 | Tests (unit + instrumented) | **Shipped** — `test-foundation` epic (2026-06-09). JVM suite: 24 tests; instrumented: 3 tests. Foundation in place; coverage expands in future epics. |
 
 ---
 
@@ -172,7 +172,7 @@ app/src/main/
 | `./gradlew connectedDebugAndroidTest` | Run instrumented tests (needs a device/emulator) |
 | `./gradlew lint` | Android Lint |
 
-**Testing note:** Gradle tests are always single-run (no watch mode). Use `--no-daemon` for clean one-shot runs in automation. There is **no unit-test source set yet** (`app/src/test/` is absent) — the first test-bearing change must create it.
+**Testing note:** Gradle tests are always single-run (no watch mode). Use `--no-daemon` for clean one-shot runs in automation. Both `app/src/test/` (JVM) and `app/src/androidTest/` (instrumented) source sets now exist (stood up by the `test-foundation` epic, 2026-06-09).
 
 ---
 

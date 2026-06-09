@@ -62,6 +62,25 @@ JUnit4 · `kotlinx-coroutines-test` (`runTest`) · Truth (assertions) · `androi
 
 ---
 
-## Phase 5 learning log (to be filled in Phase 5)
+## Retrospective (Phase 5)
 
-_Plan-vs-reality, surprises, and what we'd do differently land here after implementation._
+**What went as planned (everything material):** The epic executed exactly as the Plan Mode plan and PRD described. All 6 task groups (T1–T6) landed in the planned order; 27 tests written (24 JVM + 3 instrumented), all green; **zero production-code change**, zero `fix(` commits, zero manual-test bugs. The diff (`git diff --stat 3388949..HEAD`) contains only test files, build wiring, and docs — no surprises.
+
+**Tradeoff decisions revisited (all held):**
+- **D1–D3, D5, D6** held as chosen with no friction.
+- **D4 (defer Turbine)** held — confirmed correct: nothing in the repo needed a Flow-logic test, so Turbine would have been an unused dep.
+- **D7 (wrong-key test best-effort)** resolved *better* than planned: `wrongPassphrase_cannotOpenDatabase` passed cleanly on `net.zetetic:sqlcipher-android:4.6.0`, so the contingency `@Ignore` + skip-log was **not** needed — baseline stays 0 skips.
+
+**What we didn't foresee:**
+- **Coroutines version skew risk.** Had to probe the transitively-resolved `kotlinx-coroutines-core` (1.7.3 via room-ktx) and pin `coroutines-test` to match. Cheap once spotted; would have caused confusing runtime errors if mismatched. Worth doing on any project before adding `coroutines-test`.
+- **Emulator install conflict.** `connectedDebugAndroidTest` failed first run with `INSTALL_FAILED_UPDATE_INCOMPATIBLE` — an orphaned `io.superkeyboard` install on the AVD signed with a different key. `adb uninstall` cleared it; re-run was green. Worth a one-line note in the build/sideload doc's troubleshooting for the emulator path.
+
+**Process miss (planning, not code):** At the Phase 4 manual-test handoff I pointed the user at the running emulator + `adb install` for on-device testing. The user corrected it: manual testing is **APK → `apk-releases/` → Syncthing → physical phone**, never the emulator (emulator is only for instrumented Gradle tests). Captured durably: memory `manual-testing-via-apk` + test-plan fix (`6ea338a`) + clearer device split in `test-foundation-tests.md`. Lesson for future epics: default the manual-test handoff to the APK-delivery loop.
+
+**What we'd do differently:** Probe the coroutines version *during planning* (it's a known Android gotcha), and shut the emulator down immediately after the instrumented suite passes rather than leaving it up "for manual testing" (it was never the manual surface).
+
+**Patterns to reuse:**
+- `FakeClipboardDao` — hand-written, in-memory, *behavioural* (stores rows) fake. Generalises to any future DAO repo test; keep fakes hand-written over a mocking framework (D2/A2).
+- Range-assertion for `System.currentTimeMillis()`-based code (D3) instead of forcing a Clock seam — tests real code without flakiness or a production change.
+- Reflection-reset of a process-wide DB singleton for instrumented clean-slate (D5) — a faithful-fidelity alternative to adding a `@VisibleForTesting` production seam.
+- Scan-all-sidecars (`db`/`-wal`/`-shm`) for an encryption-at-rest assertion (D6) — robust to WAL without a checkpoint dance.

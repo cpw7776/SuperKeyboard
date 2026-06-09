@@ -14,7 +14,7 @@
 >
 > **Why this line is load-bearing:** upgrades read it to branch deterministically. The historical v5.14 "four-gates" wording bug and a *legitimate* four-gate count are TEXTUALLY IDENTICAL — this flag is the only reliable way an upgrade can tell "fix this stale `four` to `five`" from "leave this correct `four` alone." Without it, a gate-count migration can corrupt a correct suite-less file. Set it once and every future upgrade auto-branches.
 
-Gate count: five (project decision — five-gate model per CLAUDE.md "Post-Feature Gates (FIVE)"; the Test-Suite Summary gate activates once the P0 `app/src/test/` source set exists. The project is currently suite-less but deliberately keeps the five-gate model rather than the suite-less four-gate reduction.)
+Gate count: five (project decision — five-gate model per CLAUDE.md "Post-Feature Gates (FIVE)". As of the `test-foundation` epic (2026-06-09) the standalone automated suite EXISTS — `app/src/test/` (JVM: `:app:testDebugUnitTest`) + `app/src/androidTest/` (instrumented: `connectedDebugAndroidTest`) — so the Test-Suite Summary gate is now genuinely live, not hypothetical. Five gates, no longer suite-less.)
 
 ---
 

@@ -1,6 +1,8 @@
 # ADR — Test Suite Foundation (`test-foundation`)
 
-> **Status:** Accepted (2026-06-09). **Context:** first test suite in the repo (P0 #5). **Companions:** PRD `docs/prd/PRD_Test_Foundation.md`, plan snapshot `docs/plans/2026-06-09-test-foundation.md`.
+> **Status:** Accepted & implemented (2026-06-09). **Context:** first test suite in the repo (P0 #5). **Companions:** PRD `docs/prd/PRD_Test_Foundation.md`, plan snapshot `docs/plans/2026-06-09-test-foundation.md`.
+>
+> **Post-implementation outcome:** all decisions D1–D7 held as written — no decision flipped during implementation. D7 (wrong-key negative test) resolved on the favourable branch: it passed cleanly on `net.zetetic:sqlcipher-android:4.6.0`, so the contingency `@Ignore`+skip-log was not used. Implemented across commits `e433574` (D1–D3), `01e9e00` (D5–D7), with the catalog/coroutines pin in `e433574`. Zero production-code change.
 
 ## Context
 
