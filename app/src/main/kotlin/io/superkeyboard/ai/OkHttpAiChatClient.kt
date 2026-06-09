@@ -43,6 +43,14 @@ class OkHttpAiChatClient : AiChatClient {
             return AiResult.NetworkError("AI is not fully configured")
         }
 
+        // Enforce HTTPS at the boundary (ADR D7 / threat model: MITM mitigated by HTTPS). The app
+        // sets no cleartext policy and minSdk 24 permits cleartext by platform default, so without
+        // this guard a typo'd/misconfigured http:// endpoint would transmit the Bearer API key and
+        // the user's field contents in plaintext. Surface it (I1), never silently downgrade.
+        if (!isHttps(endpointUrl)) {
+            return AiResult.NetworkError("Endpoint must use https://")
+        }
+
         val url = resolveUrl(endpointUrl)
         val requestJson = json.encodeToString(
             ChatRequest.serializer(),
@@ -80,6 +88,14 @@ class OkHttpAiChatClient : AiChatClient {
             AiResult.NetworkError("Unexpected response from endpoint")
         }
     }
+
+    /**
+     * True only if [endpointUrl] is an `https://` URL (case-insensitive, leading/trailing space
+     * tolerated). Plain `http://` and any other scheme are rejected so secrets are never sent in
+     * cleartext (ADR D7).
+     */
+    private fun isHttps(endpointUrl: String): Boolean =
+        endpointUrl.trim().startsWith("https://", ignoreCase = true)
 
     /**
      * Resolve the user's endpoint into a full chat-completions URL: if it already ends with

@@ -9,6 +9,7 @@
     <application
         android:name=".SuperKeyboardApp"
         android:allowBackup="false"
+        android:usesCleartextTraffic="false"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:supportsRtl="true"

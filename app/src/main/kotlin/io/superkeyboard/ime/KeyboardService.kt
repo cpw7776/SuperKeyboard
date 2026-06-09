@@ -392,8 +392,10 @@ class KeyboardService : InputMethodService(), KeyboardView.KeyboardActionListene
     }
 
     private companion object {
-        // Upper bound on how much surrounding text we pull when there is no selection. Matches the
-        // engine's input cap so over-long fields are caught as TooLong rather than silently truncated.
+        // Upper bound on how much surrounding text we pull (per direction) when there is no
+        // selection. Deliberately well above the engine's input cap (DEFAULT_MAX_INPUT_CHARS) so an
+        // over-long field still exceeds the cap and is caught as TooLong, rather than being silently
+        // truncated here to a length the engine would accept.
         const val MAX_FIELD_CHARS = 100_000
     }
 }
