@@ -56,10 +56,22 @@
     <string name="toolbar_expand">Expand</string>
     <string name="toolbar_presets">Presets</string>
 
+    <!-- AI preview panel (IME overlay) -->
+    <string name="ai_preview_title">AI</string>
+    <string name="ai_preview_processing">Processing…</string>
+    <string name="ai_preview_apply">Apply</string>
+    <string name="ai_preview_cancel">Cancel</string>
+    <string name="ai_preview_close">Close</string>
+    <string name="ai_msg_disabled">Enable AI in Settings to use this action.</string>
+    <string name="ai_msg_unconfigured">Set up AI in Settings: add your endpoint, model, and API key.</string>
+    <string name="ai_msg_too_long">That text is too long to process. Select a shorter passage and try again.</string>
+    <string name="ai_msg_no_preset">Create a preset in Settings first.</string>
+    <string name="ai_msg_error_generic">Something went wrong. Please try again.</string>
+
     <!-- About -->
     <string name="about_version">Version %1$s</string>
-    <string name="about_privacy">SuperKeyboard is completely private. No data leaves your device unless you explicitly configure your own AI endpoints.</string>
-    <string name="about_description">A privacy-first AI keyboard. All processing happens on-device or via your own private infrastructure.</string>
+    <string name="about_privacy">SuperKeyboard is offline by default — nothing leaves your device. AI actions are opt-in and off by default; when you turn them on, requests go only to the endpoint you configure, never to a third party. No accounts, no telemetry, no cloud backup.</string>
+    <string name="about_description">A privacy-first keyboard. Typing and clipboard stay on your device. Optional AI actions are off by default and, once enabled, talk only to your own configured endpoint.</string>
 
     <!-- Clipboard -->
     <string name="clipboard_empty">No clipboard history</string>
