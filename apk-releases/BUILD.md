@@ -49,6 +49,7 @@ Bump **both** `versionCode` (monotonic int) and `versionName` in `app/build.grad
 |---|---|---|---|
 | 0.1.1 | 2 | `SuperKeyboard-v0.1.1-sideload-keystore-setup.apk` | First build with persistent keystore. ~38 MB (SQLCipher native libs ×4 ABIs). |
 | 0.1.2 | 3 | `SuperKeyboard-v0.1.2-fix-blank-keyboard-and-toolbar.apk` | Fix blank keyboard on reopen (P0) + toolbar fills width + removed dead space above keys. In-place update over 0.1.1 (same signature). |
+| 0.1.3 | 4 | `SuperKeyboard-v0.1.3-bigger-keys-clear-gesture-bar.apk` | Taller keys + bottom inset padding so the bottom row clears the gesture/nav bar. In-place update. |
 
 ## Size note
 

@@ -10,6 +10,13 @@ All notable changes to SuperKeyboard will be documented in this file.
 
 > Add entries here as features and fixes are completed. Move to a versioned section on release.
 
+### Fix: taller keys + clear the gesture/nav bar — 2026-06-09
+
+On-device follow-up after v0.1.2: the keyboard rendered and typed correctly, but the bottom row sat against the gesture-navigation bar and the keys were a touch short. Increased proportional key height (`width/10 * 1.1 → * 1.34`) and added bottom padding to the IME root layout sized to the live navigation-bar + system-gesture insets (with a 16dp floor for the common IME zero-inset case), painting the padded area the keyboard background colour. Version `0.1.2→0.1.3` (`versionCode 3→4`).
+
+**Files:** `ime/KeyboardView.kt`, `ime/KeyboardService.kt` (+`androidx.core.view` insets), `app/build.gradle.kts`.
+**DB changes:** None. **Component-surface changes:** None. **Privacy changes:** None.
+
 ### Fix: blank keyboard on reopen + toolbar/layout polish — 2026-06-07
 
 First on-device sideload (GrapheneOS) surfaced a P0: the keyboard rendered once, then came back **blank with dead keys** on reopen. Root cause — `KeyboardView` assigned each key's draw/hit rectangle (`Key.bounds`) only in `onSizeChanged()`, but `KeyboardLayout.getLayout()` returns fresh `Key` objects (empty bounds) on every state rebuild; when the IME input view is reused at the same size, `onSizeChanged()` doesn't fire, so the new keys never got bounds → `onDraw`/`onTouchEvent` skipped them all. Fix: `rebuildLayout()` now recomputes bounds immediately when the view is already sized (also fixes latent blanking on symbols/emoji layout switches). Same session shipped two layout-polish fixes: removed the redundant internal toolbar strip in `KeyboardView` (the keys now sit flush — no dead space), and changed `AIToolbarView` from a left-clustering `HorizontalScrollView` to an equal-weight horizontal `LinearLayout` so toolbar icons fill the width and shrink as more are added. Version `0.1.1→0.1.2` (`versionCode 2→3`).

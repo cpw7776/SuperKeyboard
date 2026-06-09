@@ -83,7 +83,7 @@ class KeyboardView @JvmOverloads constructor(
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         val width = MeasureSpec.getSize(widthMeasureSpec)
         val rowCount = keys.size
-        val keyHeight = width / 10f * 1.1f  // Proportional key height
+        val keyHeight = width / 10f * 1.34f  // Proportional key height (taller, easier targets)
         val totalHeight = (rowCount * keyHeight).toInt()
         setMeasuredDimension(width, totalHeight)
     }

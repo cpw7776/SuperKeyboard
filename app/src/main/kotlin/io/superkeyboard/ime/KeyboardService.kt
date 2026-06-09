@@ -6,6 +6,8 @@ import android.view.KeyEvent
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.widget.LinearLayout
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import io.superkeyboard.SuperKeyboardApp
 import io.superkeyboard.clipboard.ClipboardBottomSheet
 import io.superkeyboard.clipboard.ClipboardManagerService
@@ -44,7 +46,10 @@ class KeyboardService : InputMethodService(), KeyboardView.KeyboardActionListene
     override fun onCreateInputView(): View {
         rootLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
+            // The padded area shows through below the keys, so paint it the keyboard colour.
+            setBackgroundColor(KeyboardTheme(this@KeyboardService).colors.keyboardBackground)
         }
+        applyBottomInset(rootLayout)
 
         toolbarView = AIToolbarView(this).apply {
             onClipboardClick = { showClipboardManager() }
@@ -69,6 +74,26 @@ class KeyboardService : InputMethodService(), KeyboardView.KeyboardActionListene
         rootLayout.addView(keyboardView)
 
         return rootLayout
+    }
+
+    /**
+     * Keeps the bottom keyboard row clear of the system navigation / gesture bar so the
+     * space/enter row isn't cut off at the bottom edge. Uses the live navigation-bar +
+     * gesture insets when the framework reports them, with a fixed floor for the (common)
+     * case where an IME window receives a zero bottom inset.
+     */
+    private fun applyBottomInset(view: View) {
+        val density = resources.displayMetrics.density
+        val minPad = (16 * density).toInt()
+        view.setPadding(0, 0, 0, minPad)
+        ViewCompat.setOnApplyWindowInsetsListener(view) { v, insets ->
+            val navBottom = insets.getInsets(
+                WindowInsetsCompat.Type.navigationBars() or WindowInsetsCompat.Type.systemGestures()
+            ).bottom
+            v.setPadding(0, 0, 0, maxOf(navBottom, minPad))
+            insets
+        }
+        ViewCompat.requestApplyInsets(view)
     }
 
     override fun onStartInput(info: EditorInfo?, restarting: Boolean) {
