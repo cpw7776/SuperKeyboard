@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 fun MainSettingsScreen(
     onNavigateToAppearance: () -> Unit,
     onNavigateToClipboard: () -> Unit,
+    onNavigateToAi: () -> Unit,
     onNavigateToAbout: () -> Unit
 ) {
     val context = LocalContext.current
@@ -81,6 +82,12 @@ fun MainSettingsScreen(
                 title = "Clipboard",
                 subtitle = "History, auto-clear, privacy",
                 onClick = onNavigateToClipboard
+            )
+            SettingsItem(
+                icon = Icons.Default.AutoAwesome,
+                title = "AI",
+                subtitle = "Endpoint, model, presets",
+                onClick = onNavigateToAi
             )
             SettingsItem(
                 icon = Icons.Default.Info,

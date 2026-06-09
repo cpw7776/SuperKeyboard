@@ -19,6 +19,33 @@
     <string name="settings_clipboard_clear_all">Clear All Clipboard History</string>
     <string name="settings_clipboard_enabled">Enable Clipboard History</string>
 
+    <!-- AI Action Engine -->
+    <string name="settings_ai">AI</string>
+    <string name="settings_ai_subtitle">Endpoint, model, presets</string>
+    <string name="settings_ai_enabled">Enable AI Actions</string>
+    <string name="settings_ai_enabled_desc">Use your own AI endpoint for translate, rewrite, summarize and more</string>
+    <string name="settings_ai_endpoint_label">Endpoint URL</string>
+    <string name="settings_ai_endpoint_hint">https://your-endpoint.example/v1</string>
+    <string name="settings_ai_model_label">Model</string>
+    <string name="settings_ai_model_hint">e.g. gpt-4o-mini</string>
+    <string name="settings_ai_target_lang_label">Default translate language</string>
+    <string name="settings_ai_target_lang_hint">English</string>
+    <string name="settings_ai_api_key_label">API Key</string>
+    <string name="settings_ai_api_key_hint">Paste your API key</string>
+    <string name="settings_ai_api_key_set">A key is saved</string>
+    <string name="settings_ai_api_key_save">Save Key</string>
+    <string name="settings_ai_api_key_clear">Clear Key</string>
+    <string name="settings_ai_presets">Presets</string>
+    <string name="settings_ai_presets_empty">No presets yet</string>
+    <string name="settings_ai_preset_name_label">Name</string>
+    <string name="settings_ai_preset_prompt_label">Prompt</string>
+    <string name="settings_ai_preset_add">Add Preset</string>
+    <string name="settings_ai_preset_edit">Edit preset</string>
+    <string name="settings_ai_preset_delete">Delete preset</string>
+    <string name="settings_ai_preset_save">Save</string>
+    <string name="settings_ai_cancel">Cancel</string>
+    <string name="settings_ai_privacy_note">AI requests go only to the endpoint you configure above. AI is off by default and makes no network calls until enabled.</string>
+
     <!-- Toolbar -->
     <string name="toolbar_translate">Translate</string>
     <string name="toolbar_tts">Read Aloud</string>

@@ -15,6 +15,7 @@ fun SettingsNavHost(viewModel: SettingsViewModel) {
             MainSettingsScreen(
                 onNavigateToAppearance = { navController.navigate("appearance") },
                 onNavigateToClipboard = { navController.navigate("clipboard") },
+                onNavigateToAi = { navController.navigate("ai") },
                 onNavigateToAbout = { navController.navigate("about") }
             )
         }
@@ -26,6 +27,12 @@ fun SettingsNavHost(viewModel: SettingsViewModel) {
         }
         composable("clipboard") {
             ClipboardSettingsScreen(
+                viewModel = viewModel,
+                onBack = { navController.popBackStack() }
+            )
+        }
+        composable("ai") {
+            AiSettingsScreen(
                 viewModel = viewModel,
                 onBack = { navController.popBackStack() }
             )
