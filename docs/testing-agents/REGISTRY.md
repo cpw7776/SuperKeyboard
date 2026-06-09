@@ -29,11 +29,11 @@
 
 ## Registry
 
-> Replace the example rows below with your project's agents. Keep the header row.
+> Native Android project — "Routes/Viewports" columns are repurposed for native surfaces (Gradle suites + device).
 
 | Agent File | Scope / Purpose | Routes Covered | Roles / Tiers | Viewports | Async | Last Updated | Last Miss |
 |-----------|-----------------|----------------|---------------|-----------|-------|--------------|-----------|
-| `{feature-name}-tests.md` | {one-line purpose} | {/route/a, /route/b} | {Free, Pro, Admin} | {desktop, mobile} | {y/n} | YYYY-MM-DD | YYYY-MM-DD |
+| `test-foundation-tests.md` | Verify the JVM + instrumented suites run green and the app build isn't regressed | Gradle `:app:testDebugUnitTest`, `connectedDebugAndroidTest`, `assembleDebug` | none (offline) | AVD Medium_Phone_API_36.1 | n | 2026-06-09 | — |
 
 **Column definitions:**
 
