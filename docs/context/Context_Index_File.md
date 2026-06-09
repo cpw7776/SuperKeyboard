@@ -167,6 +167,20 @@ Also update:
 | `docs/bugs/2026-06-07-blank-keyboard-on-reopen.md` | P0 bug report: keyboard blank on reopen (fixed v0.1.2) |
 
 ### Tests
+> First suites stood up by the `test-foundation` epic (2026-06-09). See `docs/prd/PRD_Test_Foundation.md` and `docs/ard/ADR_Test_Foundation.md`.
+
 | File | Purpose |
 |------|---------|
-| *(none yet)* | No `app/src/test/` or `app/src/androidTest/` source set exists. The first test-bearing change must create one — see `docs/KIT_DEVIATIONS.md`. |
+| `app/src/test/kotlin/io/superkeyboard/ime/KeyboardStateTest.kt` | JVM unit tests for the `KeyboardState` state machine (15 tests) |
+| `app/src/test/kotlin/io/superkeyboard/clipboard/FakeClipboardDao.kt` | Hand-written in-memory fake of `ClipboardDao` for repo tests |
+| `app/src/test/kotlin/io/superkeyboard/clipboard/ClipboardRepositoryTest.kt` | JVM unit tests for `ClipboardRepository` over the fake DAO (9 tests) |
+| `app/src/androidTest/kotlin/io/superkeyboard/clipboard/ClipboardDatabaseEncryptionTest.kt` | Instrumented SQLCipher tests: encryption-at-rest, round-trip, wrong-key (3 tests) |
+
+### Feature docs — `test-foundation`
+| File | Purpose |
+|------|---------|
+| `docs/prd/PRD_Test_Foundation.md` | PRD — test-suite foundation task checklist |
+| `docs/ard/ADR_Test_Foundation.md` | ADR — test-stack decisions D1–D7 |
+| `docs/architecture/Feature_Architecture_Test_Foundation.md` | Invocation→assertion flow |
+| `docs/plans/2026-06-09-test-foundation.md` | Plan snapshot + Phase 5 learning log |
+| `docs/testing-agents/test-foundation-tests.md` | Native test plan (Gradle suites + on-device sanity) |
