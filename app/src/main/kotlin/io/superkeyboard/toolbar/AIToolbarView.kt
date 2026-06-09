@@ -7,6 +7,7 @@ import android.view.Gravity
 import android.widget.LinearLayout
 import android.widget.TextView
 import io.superkeyboard.R
+import io.superkeyboard.ai.AiAction
 import io.superkeyboard.ime.KeyboardTheme
 
 class AIToolbarView @JvmOverloads constructor(
@@ -17,11 +18,18 @@ class AIToolbarView @JvmOverloads constructor(
 
     var onClipboardClick: (() -> Unit)? = null
 
+    /** Invoked with the matching [AiAction] when one of the 5 AI buttons is tapped. */
+    var onAiAction: ((AiAction) -> Unit)? = null
+
     private val theme = KeyboardTheme(context)
+
+    /** The 5 AI-action buttons, tracked so they can be greyed out on password fields (D4). */
+    private val aiButtons = mutableListOf<TextView>()
 
     data class ToolbarAction(
         val icon: String,
         val label: String,
+        val isAiAction: Boolean = false,
         val onClick: () -> Unit
     )
 
@@ -37,18 +45,32 @@ class AIToolbarView @JvmOverloads constructor(
         layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, theme.toolbarHeight.toInt())
 
         val actions = listOf(
-            ToolbarAction("🌐", context.getString(R.string.toolbar_translate)) { /* Phase 2 */ },
+            ToolbarAction("🌐", context.getString(R.string.toolbar_translate), isAiAction = true) { onAiAction?.invoke(AiAction.TRANSLATE) },
             ToolbarAction("🔊", context.getString(R.string.toolbar_tts)) { /* Phase 3 */ },
             ToolbarAction("🎤", context.getString(R.string.toolbar_stt)) { /* Phase 3 */ },
             ToolbarAction("📋", context.getString(R.string.toolbar_clipboard)) { onClipboardClick?.invoke() },
-            ToolbarAction("✏️", context.getString(R.string.toolbar_rewrite)) { /* Phase 2 */ },
-            ToolbarAction("📝", context.getString(R.string.toolbar_summarize)) { /* Phase 2 */ },
-            ToolbarAction("📖", context.getString(R.string.toolbar_expand)) { /* Phase 2 */ },
-            ToolbarAction("⚡", context.getString(R.string.toolbar_presets)) { /* Phase 2 */ }
+            ToolbarAction("✏️", context.getString(R.string.toolbar_rewrite), isAiAction = true) { onAiAction?.invoke(AiAction.REWRITE) },
+            ToolbarAction("📝", context.getString(R.string.toolbar_summarize), isAiAction = true) { onAiAction?.invoke(AiAction.SUMMARIZE) },
+            ToolbarAction("📖", context.getString(R.string.toolbar_expand), isAiAction = true) { onAiAction?.invoke(AiAction.EXPAND) },
+            ToolbarAction("⚡", context.getString(R.string.toolbar_presets), isAiAction = true) { onAiAction?.invoke(AiAction.PRESET) }
         )
 
         for (action in actions) {
-            addView(createToolbarButton(action))
+            val button = createToolbarButton(action)
+            if (action.isAiAction) aiButtons.add(button)
+            addView(button)
+        }
+    }
+
+    /**
+     * Greys out and disables ONLY the 5 AI buttons (clipboard/tts/stt untouched). Called with
+     * `false` on password/secure fields (D4) so AI actions can't be invoked there.
+     */
+    fun setAiActionsEnabled(enabled: Boolean) {
+        for (button in aiButtons) {
+            button.isEnabled = enabled
+            button.isClickable = enabled
+            button.alpha = if (enabled) 1f else 0.3f
         }
     }
 
