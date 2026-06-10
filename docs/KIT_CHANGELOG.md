@@ -50,6 +50,38 @@ Either path: every project, regardless of age, can land on the latest kit versio
 
 ---
 
+## [v5.19] — 2026-06-10
+
+**Minor — Gap D (context-fit): the retro learns about the project's CONTEXT, not just its tests and code.** The kit's self-improvement loop had three gaps (A test suite, B testing-agent, C implementation) — all correctness-centric. Nothing asked *"did the agents have the right project context, or did they re-derive knowledge by hand that should have a durable home?"* Gap D closes that: a **read-only** sweep of the epic's own session transcripts (main agent + Task sub-agents + parallel panes — captured from the persisted JSONL, NOT hooks, which can't see sub-agent calls) clusters re-read files into subsystems **stack-agnostically** (relative to the project root — validated against a Swift/SPM false-clean), checks `docs/context/` coverage, and proposes context docs / scoped indexes through a 7-question Necessity Gauntlet (**default No**; the Gauntlet judges by reading the actual docs — a clean run asks the human NOTHING). **Accept = write + register**: the doc is authored from a real code read-pass and added to `context-docs-agent`'s `target-files` slot (scope-annotated) so Phase 5.7a maintains it from then on — created context can never silently rot. A **self-diagnostic** marks degenerate sweeps ⚠ INCONCLUSIVE (a broken run can never report "clean" — the v5.17.1 rule applied to a new mechanism), and every run bookends the **autonomous findings channel** (`~/.claude/context-fit-findings.md`: consume maintainer Advice at start, append one finding — good or bad — at end; the maintainer sweeps it via their review pass). Anti-bloat is conservative: dormant ≠ bloat, default keep, retire only dead-scope/duplicates, human-approved. Proven before shipping on three real projects (CoffeeScribe → authored+registered `Research_Agent_Context.md`; Transcribble → genuinely CLEAN; flashcard-desktop → caught the cross-runtime env/API-key gap behind a failed epic).
+
+### Added
+- **`.claude/skills/context-fit/`** — the Gap D engine (new propagation-surface skill, opt-in/removable like `cmux-orchestrator`, but with **no user-level canonical copy — the in-repo skill IS the implementation**; same ensure-present/never-clobber upgrade rule): `SKILL.md` (trigger + run recipe), `run.py` (one-command mechanical pass), `footprint.py` / `candidates.py` (transcript sweep + stack-agnostic clustering + coverage check + self-diagnostic), `context-fit-analysis.md` (the judgment procedure: findings-channel bookends, Gauntlet, consolidate, route, cards, write+register), `Indexing_Guide.md` (scoped indexes `docs/context/indexes/<area>.md`: Scope discipline, self-bootstrap templates, anti-rot, re-index triggers), `index_lint.py` (mis-file lint, exit 1 = gate-suitable).
+- **`feature-lifecycle.md` Phase 5.1 Gap D** — epic-level context-fit sweep (steps 10–12, after the per-finding Gap C machinery): mechanical pass → judgment pass → on accept, write + REGISTER. Skill-absent installs print `Gap D: skill absent, skipped` rather than failing the phase.
+- **Fingerprint `v5.19` row** (`upgrade-kit.md` Step 1) — anchored on the `## [v5.19]` `KIT_CHANGELOG.md` heading.
+
+### Changed
+- **`RETROSPECTIVE GATE` format (Gate #1) — 6 items → 7.** New **item 4 "Gap D — context-fit (epic-level sweep)"** with three lines: `Sweep: [clean | N cards proposed | ⚠ INCONCLUSIVE | skill absent, skipped]`, `Accepted → written + REGISTERED…`, `Finding appended to ~/.claude/context-fit-findings.md`. Former items renumber: Planning 4→**5**, Tier-3 5→**6**, deliberately-NOT-lessoned 6→**7**. The accounting rule now reads "named in item 7" and "Tier-3 proposals (item 6)", and notes Gap D sits OUTSIDE the per-finding reconciliation (one epic-level sweep, its line populated but not counted against `Findings swept: N`). The zero-finding note's "NAMED line in item 6" → "item 7". *(Step 4.5 CLAUDE.md sync: any CLAUDE.md text describing the retro gate's items must add Gap D and renumber accordingly — the kit's own `CLAUDE_SNIPPET.md` line is the reference wording.)*
+- **`bugfix.md` 2.4** — heading now "(AUTO — Gap A + Gap C always; Gap B when applicable; **Gap D check**)"; new **"Gap D — Context Gap Check"** subsection after Gap C (one question: *was a missing/unfindable context doc a contributing cause?* Yes → one-line `[UNCHECKED]` finding to the findings channel naming the homeless area + bug ID; No → skip with a reason). The closing Report line adds the Gap D clause.
+- **`reconcile-change.md` 2.1** — "three gap questions" → "four"; new **Gap D bullet** (same one-question check); the gate's `Lessons:` line adds `Gap D: {context-gap finding logged | n/a}`.
+- **`docs/AGENTS.md`** — gate #1 description adds Gap D; "Optional project skills" section adds the `context-fit` entry (no global-canonical copy; ensure-present/never-clobber).
+- **`docs/CLAUDE_SNIPPET.md`** — gate #1 description adds Gap D (the reference wording for Step 4.5 CLAUDE.md sync).
+- **`docs/README.md`** — adoption tree + folder table list `.claude/skills/context-fit/`.
+
+### Files touched
+- `.claude/skills/context-fit/` — `SKILL.md`, `run.py`, `footprint.py`, `candidates.py`, `context-fit-analysis.md`, `Indexing_Guide.md`, `index_lint.py` (all new)
+- `docs/prompts/feature-lifecycle.md` (Phase 5.1 Gap D + gate renumber)
+- `docs/prompts/bugfix.md` (2.4 Gap D check)
+- `docs/prompts/reconcile-change.md` (2.1 Gap D bullet + gate line)
+- `docs/AGENTS.md`, `docs/CLAUDE_SNIPPET.md`, `docs/README.md` (propagation)
+- `docs/prompts/upgrade-kit.md` (v5.19 fingerprint row)
+- `docs/upgrading/v5.18-to-v5.19.md` (new migration prompt)
+- `docs/KIT_VERSION` (5.18 → 5.19), `docs/KIT_CHANGELOG.md` (this entry)
+
+### Migration
+`migration-prompt-required` — `docs/upgrading/v5.18-to-v5.19.md`. Anchored insertions into three rewrite-prone prompt files (role-based fallbacks included), a gate-format renumber that must propagate to CLAUDE.md, and the new skill directory (ensure-present, never-clobber; a project that deliberately removed it per `KIT_DEVIATIONS.md` is not re-seeded). Python 3 is required only when the sweep actually runs (stdlib-only; no packages).
+
+---
+
 ## [v5.18] — 2026-06-08
 
 **Minor — new optional capability + new propagation surface: ship a `cmux-orchestrator` skill so every project (and future project) can run orchestrator mode, without a CLAUDE.md-section propagation problem.** Maintainer need: parallel "orchestrator mode" (several epics as separate Claude sessions tiled in one cmux workspace) was documented only as a CLAUDE.md section the maintainer had hand-added to *some* projects — stale projects on older kit versions never got it. A skill is the right primitive (an action with a trigger, self-advertising via its description) and a **user-level (global) skill** at `~/.claude/skills/cmux-orchestrator/` makes the propagation problem *disappear*: it's available in every project on that machine regardless of kit version. The kit also ships an in-repo copy so the capability **travels to other machines** that lack the global skill. Confirmed against Claude Code skill resolution: personal (global) overrides project, no collision; a skill file is read once per session (so self-improvement edits take effect next session). No lifecycle/phase/sub-agent/gate change — this is additive infrastructure.
