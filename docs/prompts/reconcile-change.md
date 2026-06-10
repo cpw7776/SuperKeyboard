@@ -85,11 +85,12 @@ Then, for each new or changed unit of behaviour in the diff:
 
 ### 2.1 Lessons learned (reverse-retro — lightweight)
 
-This is the ad-hoc mirror of `feature-lifecycle.md` Phase 5.1: the same durable-lesson capture, scaled down to a single change. For the change you just reconciled — **especially if it was a bug fix, or a red backfilled test exposed a real defect** — ask the three gap questions and capture any *generalisable* lesson. Skip a gap with a one-line reason if it doesn't apply; don't manufacture lessons for a clean one-off.
+This is the ad-hoc mirror of `feature-lifecycle.md` Phase 5.1: the same durable-lesson capture, scaled down to a single change. For the change you just reconciled — **especially if it was a bug fix, or a red backfilled test exposed a real defect** — ask the four gap questions and capture any *generalisable* lesson. Skip a gap with a one-line reason if it doesn't apply; don't manufacture lessons for a clean one-off.
 
 - **Gap A — test lesson:** *Why didn't an existing test catch this?* If generalisable, append the lesson to `docs/context/Unit_Test_Writing_Guide.md` (`## Project Lessons`) — same Gap-A discipline as `bugfix.md`.
 - **Gap B — browser-test lesson:** if the change is browser-observable and an existing testing-agent *should* have caught it, note the miss on that agent (and/or `docs/context/Testing_Patterns.md`) per `docs/prompts/testing-retro.md`, or flag "no owner" if none covers it.
 - **Gap C — implementation/code lesson:** *Was the code an instance of a recurring fault-class, a project gotcha, or an architectural anti-pattern?* (Name the class with the I-series vocabulary — swallowed error, unvalidated boundary, drifted duplication, symptom-at-wrong-layer, etc.) If generalisable, append a Project Lesson to `docs/context/Implementation_Patterns.md` (bug-class / gotcha / architecture), traced to the change. The next implementer reads it before writing code.
+- **Gap D — context gap (lightweight, kit v5.19+):** *Did making this change require re-deriving how a subsystem works because no context doc owns it?* If yes, append a one-line `[UNCHECKED]` finding to `~/.claude/context-fit-findings.md` under this project's section naming the homeless area — the full sweep + Gauntlet runs at the next epic close (`feature-lifecycle.md` Phase 5.1 Gap D) or ad-hoc via the `context-fit` skill (`.claude/skills/context-fit/`, kit v5.19+); don't run it inline here.
 
 A Tier-3 (skill-universal) lesson — generalisable beyond this project — is **proposed, not applied**: surface it for the user's approval rather than editing a universal guide section unilaterally.
 
@@ -142,7 +143,7 @@ RECONCILE GATE:
 
 Change set:    [one-line summary] — [N files, from working-tree / last-commit / branch]
 Tests:         [Added N tests, all green / Found + fixed M defects / No unit surface — browser-observable, agent: {name}]
-Lessons:       [Gap A: {guide entry added | n/a} · Gap B: {agent miss noted | n/a} · Gap C: {Implementation_Patterns entry added | n/a} · Tier-3 proposed: {list | none}]
+Lessons:       [Gap A: {guide entry added | n/a} · Gap B: {agent miss noted | n/a} · Gap C: {Implementation_Patterns entry added | n/a} · Gap D: {context-gap finding logged | n/a} · Tier-3 proposed: {list | none}]
 Architecture:  [Updated {doc} / Lightweight note created / Skipped because {reason}]
 
 <verbatim CONTEXT DOCS GATE block from Phase 4>

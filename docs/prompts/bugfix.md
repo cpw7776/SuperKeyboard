@@ -117,9 +117,9 @@ Wait for user approval before applying changes.
 12. Remove ALL diagnostic logging
 13. Commit with descriptive message
 
-### 2.4 Retros (AUTO — Gap A + Gap C always; Gap B when applicable)
+### 2.4 Retros (AUTO — Gap A + Gap C always; Gap B when applicable; Gap D check)
 
-**Three retros may apply. Run each that fits.** Gap A (test honesty) and Gap C (code fault-class) always run — a bug fix is the richest source of *both* a test lesson and a code lesson. Gap B (browser-test library) runs when the bug escaped past Phase 4.
+**Three retros may apply, plus a lightweight context check. Run each that fits.** Gap A (test honesty) and Gap C (code fault-class) always run — a bug fix is the richest source of *both* a test lesson and a code lesson. Gap B (browser-test library) runs when the bug escaped past Phase 4. Gap D (context gap) is a one-question check, not a retro.
 
 #### Gap A — Test Suite Retro (unit/integration)
 
@@ -163,4 +163,11 @@ Commit `docs/test-suite-misses.md` and `docs/context/Unit_Test_Writing_Guide.md`
 
 Commit `docs/context/Implementation_Patterns.md` (if Tier 2) alongside the code fix when small, or as a separate `docs(impl-retro): {bug-id} ({fault-class})` commit when substantial.
 
-Report: what changed, what was fixed, what test gaps were closed (Gap A — code-level via `test-suite-retro.md`, including miss log entry and any guide update), what testing-agent gaps were closed (Gap B — browser-level via `testing-retro.md`), what code lesson was captured (Gap C — `Implementation_Patterns.md` entry or Tier-1 note), any manual verification needed.
+#### Gap D — Context Gap Check (lightweight, kit v5.19+)
+
+**One question, not a retro:** *was a missing or unfindable context doc a contributing cause?* — the bug exists because the implementing agent didn't know how a subsystem works (an undocumented contract, invariant, or cross-runtime asymmetry no `docs/context/` file owns), or you had to re-derive that knowledge to fix it.
+
+- **Yes** → append a one-line `[UNCHECKED]` finding to `~/.claude/context-fit-findings.md` under this project's section, naming the homeless area and this bug ID. The full footprint sweep + Necessity Gauntlet runs at the next epic close (`feature-lifecycle.md` Phase 5.1 Gap D) or ad-hoc via the `context-fit` skill (`.claude/skills/context-fit/`) — don't run it inline here.
+- **No** (the knowledge existed and was findable; the bug was a plain code/test slip) → skip with a one-line reason. Don't manufacture a context gap for every bug.
+
+Report: what changed, what was fixed, what test gaps were closed (Gap A — code-level via `test-suite-retro.md`, including miss log entry and any guide update), what testing-agent gaps were closed (Gap B — browser-level via `testing-retro.md`), what code lesson was captured (Gap C — `Implementation_Patterns.md` entry or Tier-1 note), whether a context gap was flagged (Gap D — findings-channel line or skip reason), any manual verification needed.

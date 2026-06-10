@@ -749,11 +749,19 @@ Run `docs/prompts/test-suite-retro.md` against the bug. The retro:
 
 (In orchestrator mode, the Phase 4 fix-sub-agent loop has typically already done the autopsy + fix per bug. Phase 5's job here is to consolidate the autopsy findings across all bugs — Gap A, Gap B, and Gap C closures, including the new miss-log entries, testing-agent Miss Log entries, and any guide updates (unit-test guide and `Implementation_Patterns.md`) — into one coherent retrospective entry, and to surface any Tier-2 / Tier-3 propagations for user approval.)
 
+**Gap D — context-fit (epic-level sweep — kit v5.19+).** Unlike Gaps A–C, this is **not per-finding** — it is one sweep over the whole epic asking a different question: *did the agents have the right project context, or did they reconstruct knowledge by hand that should have had a durable home?* It reads the epic's own session transcripts (main agent + sub-agents) for the read/search footprint and proposes — never applies — context docs / scoped indexes for genuinely homeless subsystems.
+
+10. **Run the mechanical pass** from the project root: `python3 .claude/skills/context-fit/run.py --project .` (sweeps transcripts, clusters subsystems stack-agnostically, checks `docs/context/` coverage, writes `/tmp/context-fit/candidates.json`).
+11. **Run the judgment pass**: follow `.claude/skills/context-fit/context-fit-analysis.md` end-to-end — bookend the findings channel (consume Advice at start; append one finding at end), honour the `diagnostic` field (`diagnostic` set → the sweep is **INCONCLUSIVE, not clean** — report the ⚠, never a false clean), run the Necessity Gauntlet over HOMELESS candidates **reading the actual context docs** (role-named docs like `Project_PDR.md` over-trigger the filename heuristic), consolidate siblings, and emit proposal cards (default **No**).
+12. **On an accepted card: write + REGISTER.** Author the doc from a real read-pass over the subsystem code (never a stub), add it to `context-docs-agent`'s `target-files` slot (scope-annotated, so Phase 5.7a maintains it from now on), and lint any scoped index with `.claude/skills/context-fit/index_lint.py`. A clean sweep (0 cards, `diagnostic` null) asks the user **nothing** — it reports one line on the gate and moves on.
+
+*(If the skill directory is absent — pre-v5.19 install or deliberately removed per `KIT_DEVIATIONS.md` — print `Gap D: skill absent, skipped` on the gate line rather than failing the phase.)*
+
 #### 5.1 Gate Output — RETROSPECTIVE GATE (VERBATIM, MANDATORY — main agent authors it)
 
 **The sweep above is not done until this block is printed.** It is the merge-blocking proof that the retro was actually performed and accounted-for per finding — the same enforcement idiom as the Documentation Gate (a step that reliably runs *because* it ends in a pasted gate, unlike the conditional reminder this replaces). Phase 5 runs in the main agent in both modes, so the main agent authors this block directly (no sub-agent dispatch). It is **Gate #1** of the five checked at Phase 5.8 — chronologically the earliest.
 
-**A zero-finding run STILL prints the block** — `Findings swept: 0` and every line `none`. The gate is the sweep being performed and accounted-for, NOT whether any lesson resulted. "It was only polish" becomes a NAMED line in item 6, never a silent skip — that named accounting is exactly why teams can keep the gate on a polish-only epic instead of wanting to skip it.
+**A zero-finding run STILL prints the block** — `Findings swept: 0` and every line `none`. The gate is the sweep being performed and accounted-for, NOT whether any lesson resulted. "It was only polish" becomes a NAMED line in item 7, never a silent skip — that named accounting is exactly why teams can keep the gate on a polish-only epic instead of wanting to skip it.
 
 **Print it exactly, for the WHOLE epic (all findings consolidated), as the close of Phase 5.1:**
 
@@ -776,18 +784,23 @@ Findings swept: [N]   (manual-test findings ∪ `fix(` commits in <phase-2-end-c
    - Project Lessons added to `docs/context/Implementation_Patterns.md` (bug-class / gotcha / architecture): [list each, or "none"]
    → [guide entries added | none because ___]
 
-4. Planning / process:
+4. Gap D — context-fit (epic-level sweep):
+   - Sweep: [clean (0 cards, diagnostic null) | N cards proposed: {list} | ⚠ INCONCLUSIVE: {diagnostic} | skill absent, skipped]
+   - Accepted → written + REGISTERED in context-docs-agent target-files: [list each doc/index, or "none"]
+   - Finding appended to `~/.claude/context-fit-findings.md`: [YES / channel unavailable]
+
+5. Planning / process:
    - Plan-doc retrospective updated (`docs/plans/<...>.md` §Retrospective, per 5.2): [YES — {one-line summary} / none]
 
-5. Tier-3 (skill-universal) proposals AWAITING USER APPROVAL:
+6. Tier-3 (skill-universal) proposals AWAITING USER APPROVAL:
    - [list each proposed universal test anti-pattern / universal code anti-pattern (I-series) / skill-level / kit-level change, or "none"]
 
-6. Findings deliberately NOT lessoned (each finding NAMED with its reason):
+7. Findings deliberately NOT lessoned (each finding NAMED with its reason):
    - [finding] — [UX-polish / forward-scope / documented out-of-scope exemption / Tier-1 one-off] — {reason}
    - ... (or "none")
 ```
 
-**Accounting rule:** every finding must be accounted for. The count of findings that produced at least one lesson (Gap A, Gap B, and/or Gap C), plus the count named in item 6, must equal `Findings swept: N`. If they don't reconcile, a finding fell through — re-run the sweep. A finding can close more than one gap (it's counted once toward the reconciliation, with all its gap closures listed). Tier-3 proposals (item 5) block merge only in the sense that they must be *surfaced* here; the user approves or defers them, they don't stall the gate.
+**Accounting rule:** every finding must be accounted for. The count of findings that produced at least one lesson (Gap A, Gap B, and/or Gap C), plus the count named in item 7, must equal `Findings swept: N`. If they don't reconcile, a finding fell through — re-run the sweep. A finding can close more than one gap (it's counted once toward the reconciliation, with all its gap closures listed). **Gap D (item 4) sits outside this per-finding reconciliation** — it is one epic-level sweep, not a per-finding autopsy; its line must simply be populated (clean / cards / ⚠ / absent — never blank). Tier-3 proposals (item 6) block merge only in the sense that they must be *surfaced* here; the user approves or defers them, they don't stall the gate.
 
 ### 5.2 Update Plan Document (Learning Doc)
 
