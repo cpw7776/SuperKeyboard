@@ -55,7 +55,8 @@ your-project/
 │   ├── commands/             ← Project-level slash commands (use as-is — no customization)
 │   │   └── reconcile.md      ← /reconcile → runs docs/prompts/reconcile-change.md
 │   └── skills/               ← Optional project skills (use as-is — no customization)
-│       └── cmux-orchestrator/ ← in-repo fallback copy of the global cmux-orchestrator skill (travels to machines that lack ~/.claude/skills/; the global copy overrides it where present)
+│       ├── cmux-orchestrator/ ← in-repo fallback copy of the global cmux-orchestrator skill (travels to machines that lack ~/.claude/skills/; the global copy overrides it where present)
+│       └── context-fit/      ← Gap D engine (v5.19+): read-only transcript sweep that finds undocumented subsystems and proposes context docs/indexes (auto-run at epic close by Phase 5.1)
 ├── docs/
 │   ├── context/              ← Build these out for YOUR project (includes Unit_Test_Writing_Guide.md — universal anti-patterns + project lessons appended by retros)
 │   ├── prompts/              ← Ready to use (universal — 3 deliberation stops + Phase 0 mode pick)
@@ -172,6 +173,7 @@ If the project's stack has **no automated test story at all** (e.g. a sideload-o
 |--------|---------|-------------------|
 | `.claude/agents/` | Sub-agents invoked by feature-lifecycle.md | You (copy from this kit, then customize) |
 | `.claude/commands/` | Project-level slash commands (kit v5.9+ — `/reconcile`) | You (copy from this kit — no customization) |
+| `.claude/skills/` | Optional project skills (kit v5.18+ — `cmux-orchestrator`; kit v5.19+ — `context-fit`, the Gap D engine auto-run at epic close); opt-in/removable. For `cmux-orchestrator` the user-level copy at `~/.claude/skills/` overrides the in-repo one where present | You (copy from this kit — no customization) |
 | `docs/context/` | Project-level source of truth (7 files, always current) | You (initial), AI (maintains via context-docs-agent) |
 | `docs/prompts/` | Workflow prompts for the AI agent | You (this kit provides them) |
 | `docs/prd/` | Product Requirements Documents (one per feature) | AI (during feature lifecycle Phase 2) |

@@ -111,6 +111,7 @@ If no `KIT_VERSION` file exists, walk this decision tree against the target proj
 | `docs/prompts/upgrade-kit.md` Step 6.5 contains the string `DEFECT (always surface — mandatory` | at least v5.17.1 | exactly v5.17 |
 | `docs/prompts/upgrade-kit.md` Step 5 contains the string `refresh the changelog copy` (heading) | at least v5.17.2 | exactly v5.17.1 |
 | `docs/KIT_CHANGELOG.md` contains the heading `## [v5.18]` *(anchored on the changelog heading, not the `.claude/skills/cmux-orchestrator/` file — the skill is an opt-in/removable capability, so file-presence would false-negate on projects that removed it; the heading is rewrite- and removal-invariant, kept current by Step 5)* | at least v5.18 | exactly v5.17.2 |
+| `docs/KIT_CHANGELOG.md` contains the heading `## [v5.19]` *(changelog-heading anchor, same rationale as v5.18 — the `context-fit` skill is removable and `feature-lifecycle.md` is rewrite-prone, so neither file-presence nor prompt prose is a safe anchor)* | at least v5.19 | exactly v5.18 |
 
 **Note on `model: inherit`:** Some projects deliberately override the model field to `inherit` so the agent runs on whatever model the orchestrator is using. Treat `inherit` as a valid third state — it satisfies the v5.5 check (the project intentionally overrode the kit default; do NOT flip it to `opus`). Log it as a project override in the customization inventory and proceed. If the project also documents this override in `docs/KIT_DEVIATIONS.md`, the inventory step will surface that automatically.
 
