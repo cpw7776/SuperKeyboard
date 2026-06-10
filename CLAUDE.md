@@ -169,7 +169,7 @@ Relevant Claude Code skills for this stack:
 
 Phase 5 of `feature-lifecycle.md` requires **five** verbatim gate blocks before committing, in order:
 
-1. **`RETROSPECTIVE GATE:`** — verbatim from Phase 5.1 (main agent). Unconditional retro sweep over every manual-test finding ∪ `fix(` commit, with Gap A / Gap B / Gap C (→ `docs/context/Implementation_Patterns.md`) / planning / Tier-3 / deliberately-not-lessoned lines. Zero-finding epic still prints it with all lines `none`.
+1. **`RETROSPECTIVE GATE:`** — verbatim from Phase 5.1 (main agent). Unconditional retro sweep over every manual-test finding ∪ `fix(` commit, with Gap A / Gap B / Gap C (→ `docs/context/Implementation_Patterns.md`) / Gap D (context-fit epic sweep — kit v5.19+) / planning / Tier-3 / deliberately-not-lessoned lines. Zero-finding epic still prints it with all lines `none`.
 2. **Test-Suite Summary Lines** — verbatim from Phase 5.4's pre-merge full-suite re-run. Any failures must already be in `docs/known-test-failures.md`.
 3. **`CODE QUALITY GATE:`** — 10 items (Post-Test mode). Item 7 (`/vulnerability-scanner (2)`) must show `CLEAN`.
 4. **`CONTEXT DOCS GATE:`** — CHANGELOG line must show `Entry added — MANDATORY`.
